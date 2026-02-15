@@ -1,9 +1,12 @@
 /**
- * LP Visual Editor v2.0
+ * LP Visual Editor v2.1
  * どのHTMLにも1行追加するだけでnote風ビジュアル編集モードを追加
  *
  * 使い方: HTMLの</body>直前に以下を追加
  * <script src="lp-editor.js"></script>
+ *
+ * 起動方法: Ctrl+Shift+E (Mac: ⌘+Shift+E) で編集ツールバーを表示
+ * ※ 一般訪問者には編集UIは一切見えません
  *
  * 機能:
  *  ✏️ ボタンで編集モードON/OFF
@@ -15,6 +18,26 @@
  */
 (function() {
   'use strict';
+
+  // === 秘密キーで起動（Ctrl+Shift+E / ⌘+Shift+E） ===
+  let editorReady = false;
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+      e.preventDefault();
+      if (!editorReady) {
+        editorReady = true;
+        initEditor();
+      } else {
+        // 既に初期化済み → ツールバーの表示/非表示を切替
+        const root = document.getElementById('lp-editor-root');
+        if (root) {
+          root.style.display = root.style.display === 'none' ? '' : 'none';
+        }
+      }
+    }
+  });
+
+  function initEditor() {
 
   // === CSS注入 ===
   const css = document.createElement('style');
@@ -798,5 +821,7 @@
     const wrap = e.target.closest('.lpe-img-wrap');
     if (wrap) lastHoveredImg = wrap.querySelector('img');
   });
+
+  } // initEditor() 終了
 
 })();
