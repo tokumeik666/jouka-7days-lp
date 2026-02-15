@@ -811,36 +811,6 @@ hr.water-line {
   margin-bottom: 8px;
 }
 
-/* ===== 画像マーキー（無限横スクロール） ===== */
-.img-marquee {
-  overflow: hidden;
-  margin: 32px -28px;
-  position: relative;
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-}
-.marquee-track {
-  display: flex;
-  gap: 20px;
-  width: max-content;
-  animation: marqueeScroll 40s linear infinite;
-}
-.marquee-track img {
-  width: 280px;
-  height: auto;
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 6px 30px rgba(0,0,0,0.35);
-  flex-shrink: 0;
-}
-@keyframes marqueeScroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-.marquee-track:hover {
-  animation-play-state: paused;
-}
-
 /* ===== Responsive ===== */
 @media (max-width: 640px) {
   .pricing-grid, .compare-grid { grid-template-columns: 1fr; }
@@ -852,9 +822,6 @@ hr.water-line {
   .moon-symbol .moon, .moon-symbol .moon-glow { width: 85px; height: 85px; top: 12px; left: 12px; }
   .moon-symbol .moon-shadow { width: 62px; height: 85px; top: 12px; left: 32px; }
   .container { padding: 0 22px; }
-  .img-marquee { margin: 24px -22px; }
-  .marquee-track img { width: 220px; }
-  .marquee-track { gap: 14px; }
 }
 </style>
 </head>
@@ -909,20 +876,12 @@ hr.water-line {
 
     <p class="bt tc fi"><strong>そして、現在も80件以上の方からお問い合わせが来ている浄化プログラム。</strong></p>
 
-    <div class="img-marquee fi">
-      <div class="marquee-track">
-        <img src="https://assets.st-note.com/img/1765963725-tXAb7hVrFOPGoL8SDMTeWnNg.jpg" alt="お問い合わせ1">
-        <img src="https://assets.st-note.com/img/1765963725-gpWDc6U5bN1APH3fduXrsLSJ.jpg" alt="お問い合わせ2">
-        <img src="https://assets.st-note.com/img/1765963725-8VZbotE9yONcmpauSjPiTvF5.jpg" alt="お問い合わせ3">
-        <img src="https://assets.st-note.com/img/1765963725-2qvewrfXdm6onVLAO5RJ0Bi9.jpg" alt="お問い合わせ4">
-        <img src="https://assets.st-note.com/img/1765963725-yEsKghidS01DoXH2nJ8kGxFT.jpg" alt="お問い合わせ5">
-        <!-- 複製（シームレスループ用） -->
-        <img src="https://assets.st-note.com/img/1765963725-tXAb7hVrFOPGoL8SDMTeWnNg.jpg" alt="">
-        <img src="https://assets.st-note.com/img/1765963725-gpWDc6U5bN1APH3fduXrsLSJ.jpg" alt="">
-        <img src="https://assets.st-note.com/img/1765963725-8VZbotE9yONcmpauSjPiTvF5.jpg" alt="">
-        <img src="https://assets.st-note.com/img/1765963725-2qvewrfXdm6onVLAO5RJ0Bi9.jpg" alt="">
-        <img src="https://assets.st-note.com/img/1765963725-yEsKghidS01DoXH2nJ8kGxFT.jpg" alt="">
-      </div>
+    <div class="img-gallery fi">
+      <img src="https://assets.st-note.com/img/1765963725-tXAb7hVrFOPGoL8SDMTeWnNg.jpg" alt="お問い合わせ1">
+      <img src="https://assets.st-note.com/img/1765963725-gpWDc6U5bN1APH3fduXrsLSJ.jpg" alt="お問い合わせ2">
+      <img src="https://assets.st-note.com/img/1765963725-8VZbotE9yONcmpauSjPiTvF5.jpg" alt="お問い合わせ3">
+      <img src="https://assets.st-note.com/img/1765963725-2qvewrfXdm6onVLAO5RJ0Bi9.jpg" alt="お問い合わせ4">
+      <img src="https://assets.st-note.com/img/1765963725-yEsKghidS01DoXH2nJ8kGxFT.jpg" alt="お問い合わせ5">
     </div>
 
   </div>
@@ -1468,7 +1427,7 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 </script>
 
 <!-- ビジュアル編集モード -->
-<script src="lp-editor.js?v=2.3"></script>
+<script src="lp-editor.js"></script>
 
 </body>
 </html>
