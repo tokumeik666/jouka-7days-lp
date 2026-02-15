@@ -5,7 +5,7 @@
  * 使い方: HTMLの</body>直前に以下を追加
  * <script src="lp-editor.js"></script>
  *
- * 起動方法: Ctrl+Shift+E (Mac: ⌘+Shift+E) で編集ツールバーを表示
+ * 起動方法: URLに ?edit を付ける or Ctrl+Shift+E (Mac: ⌘+Shift+E)
  * ※ 一般訪問者には編集UIは一切見えません
  *
  * 機能:
@@ -19,16 +19,29 @@
 (function() {
   'use strict';
 
-  // === 秘密キーで起動（Ctrl+Shift+E / ⌘+Shift+E） ===
+  // === 起動方法 ===
+  // 1. URLに ?edit を付ける（例: https://example.com/?edit）
+  // 2. キーボード Ctrl+Shift+E / ⌘+Shift+E
   let editorReady = false;
+
+  // URLパラメータで自動起動
+  if (location.search.includes('edit')) {
+    editorReady = true;
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initEditor);
+    } else {
+      initEditor();
+    }
+  }
+
+  // キーボードショートカットでも起動可能
   document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
       e.preventDefault();
       if (!editorReady) {
         editorReady = true;
         initEditor();
       } else {
-        // 既に初期化済み → ツールバーの表示/非表示を切替
         const root = document.getElementById('lp-editor-root');
         if (root) {
           root.style.display = root.style.display === 'none' ? '' : 'none';
