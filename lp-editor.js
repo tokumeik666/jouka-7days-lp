@@ -5,8 +5,11 @@
  * 使い方: HTMLの</body>直前に以下を追加
  * <script src="lp-editor.js"></script>
  *
- * 起動方法: URLに ?edit を付ける or Ctrl+Shift+E (Mac: ⌘+Shift+E)
- * ※ 一般訪問者には編集UIは一切見えません
+ * 起動方法:
+ *  1. ページ最下部の🔒欄にパスワード「edit」を入力してEnter
+ *  2. URLに ?edit を付ける
+ *  3. Ctrl+Shift+E (Mac: ⌘+Shift+E)
+ * ※ 一般訪問者には編集UIは見えません（🔒欄は極薄表示）
  *
  * 機能:
  *  ✏️ ボタンで編集モードON/OFF
@@ -20,19 +23,64 @@
   'use strict';
 
   // === 起動方法 ===
-  // 1. URLに ?edit を付ける（例: https://example.com/?edit）
-  // 2. キーボード Ctrl+Shift+E / ⌘+Shift+E
+  // 1. ページ最下部のパスワード欄に入力
+  // 2. URLに ?edit を付ける（例: https://example.com/?edit）
+  // 3. キーボード Ctrl+Shift+E / ⌘+Shift+E
+  const EDIT_PASSWORD = 'edit';
   let editorReady = false;
 
-  // URLパラメータで自動起動
-  if (location.search.includes('edit')) {
-    editorReady = true;
+  function boot() {
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initEditor);
+      document.addEventListener('DOMContentLoaded', run);
     } else {
+      run();
+    }
+  }
+
+  function run() {
+    // パスワード欄をページ最下部に設置
+    createPasswordField();
+
+    // URLパラメータで自動起動
+    if (location.search.includes('edit')) {
+      editorReady = true;
       initEditor();
     }
   }
+
+  function createPasswordField() {
+    const bar = document.createElement('div');
+    bar.id = 'lpe-pw-bar';
+    bar.style.cssText = 'text-align:center;padding:18px 12px;opacity:0.25;transition:opacity 0.3s;';
+    bar.addEventListener('mouseenter', () => bar.style.opacity = '0.6');
+    bar.addEventListener('mouseleave', () => { if (!bar.querySelector('input:focus')) bar.style.opacity = '0.25'; });
+
+    const input = document.createElement('input');
+    input.type = 'password';
+    input.placeholder = '🔒';
+    input.autocomplete = 'off';
+    input.style.cssText = 'width:120px;padding:6px 12px;border:1px solid rgba(255,255,255,0.15);border-radius:20px;background:rgba(255,255,255,0.05);color:#888;font-size:13px;text-align:center;outline:none;';
+    input.addEventListener('focus', () => { bar.style.opacity = '0.8'; input.style.borderColor = 'rgba(255,255,255,0.3)'; });
+    input.addEventListener('blur', () => { bar.style.opacity = '0.25'; input.style.borderColor = 'rgba(255,255,255,0.15)'; });
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        if (this.value === EDIT_PASSWORD && !editorReady) {
+          editorReady = true;
+          bar.remove();
+          initEditor();
+        } else if (this.value !== EDIT_PASSWORD) {
+          input.style.borderColor = '#c45848';
+          setTimeout(() => input.style.borderColor = 'rgba(255,255,255,0.15)', 800);
+          this.value = '';
+        }
+      }
+    });
+
+    bar.appendChild(input);
+    document.body.appendChild(bar);
+  }
+
+  boot();
 
   // キーボードショートカットでも起動可能
   document.addEventListener('keydown', function(e) {
@@ -40,6 +88,8 @@
       e.preventDefault();
       if (!editorReady) {
         editorReady = true;
+        const pwBar = document.getElementById('lpe-pw-bar');
+        if (pwBar) pwBar.remove();
         initEditor();
       } else {
         const root = document.getElementById('lp-editor-root');
