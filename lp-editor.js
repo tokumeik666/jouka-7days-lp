@@ -141,6 +141,21 @@
       color: #fff;
       display: none;
     }
+    .lpe-btn.lpe-publish {
+      background: #2563eb;
+      color: #fff;
+      display: none;
+      font-size: 16px;
+    }
+    .lpe-btn.lpe-publish.saving {
+      opacity: 0.6;
+      pointer-events: none;
+      animation: lpePulse 1s ease-in-out infinite;
+    }
+    @keyframes lpePulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(0.9); }
+    }
     .lpe-btn.lpe-link {
       background: #7c3aed;
       color: #fff;
@@ -452,11 +467,12 @@
     </div>
     <div class="lpe-notice" id="lpeNotice">
       ✏️ 編集モード — テキスト直接編集 / 画像: クリック・ドロップ・ペーストで差替え / ✕で削除
-      <span class="lpe-sub">（💾で保存）</span>
+      <span class="lpe-sub">🚀で公開保存 / 📥でダウンロード</span>
     </div>
     <div class="lpe-toolbar">
       <button class="lpe-btn lpe-link" id="lpeLinkBtn" title="リンク編集モード">🔗</button>
-      <button class="lpe-btn lpe-save" id="lpeSaveBtn" title="保存（HTMLをダウンロード）">💾</button>
+      <button class="lpe-btn lpe-save" id="lpeSaveBtn" title="HTMLダウンロード">📥</button>
+      <button class="lpe-btn lpe-publish" id="lpePublishBtn" title="GitHubに保存・公開">🚀</button>
       <button class="lpe-btn lpe-toggle" id="lpeToggle" title="編集モード切替">✏️</button>
     </div>
     <div class="lpe-toast" id="lpeToast"></div>
@@ -466,6 +482,7 @@
   // === 要素取得 ===
   const toggleBtn = document.getElementById('lpeToggle');
   const saveBtn = document.getElementById('lpeSaveBtn');
+  const publishBtn = document.getElementById('lpePublishBtn');
   const linkBtn = document.getElementById('lpeLinkBtn');
   const notice = document.getElementById('lpeNotice');
   const imgModal = document.getElementById('lpeImgModal');
@@ -525,6 +542,7 @@
     toggleBtn.classList.add('active');
     toggleBtn.textContent = '✕';
     saveBtn.style.display = 'flex';
+    publishBtn.style.display = 'flex';
     linkBtn.style.display = 'flex';
     notice.style.display = 'block';
 
@@ -632,6 +650,7 @@
     toggleBtn.classList.remove('active');
     toggleBtn.textContent = '✏️';
     saveBtn.style.display = 'none';
+    publishBtn.style.display = 'none';
     linkBtn.style.display = 'none';
     notice.style.display = 'none';
     linkEditing = false;
@@ -869,6 +888,104 @@
     URL.revokeObjectURL(url);
 
     showToast('✅ 保存完了！ ダウンロードフォルダを確認');
+  });
+
+  // === GitHub に保存・公開 ===
+  publishBtn.addEventListener('click', async function() {
+    publishBtn.classList.add('saving');
+    publishBtn.textContent = '⏳';
+    showToast('🚀 GitHubに保存中...');
+
+    try {
+      // --- GitHub情報を自動検出 ---
+      let owner, repo, filePath = 'index.html';
+      const hostname = location.hostname;
+      if (hostname.endsWith('.github.io')) {
+        owner = hostname.replace('.github.io', '');
+        const pathParts = location.pathname.split('/').filter(Boolean);
+        repo = pathParts[0] || '';
+      }
+      if (!owner || !repo) {
+        const meta = document.querySelector('meta[name="lp-github"]');
+        if (meta) {
+          const parts = meta.content.split('/');
+          owner = parts[0]; repo = parts[1];
+        }
+      }
+      if (!owner || !repo) {
+        showToast('⚠️ GitHub情報を検出できません');
+        return;
+      }
+
+      // --- トークン取得（初回はプロンプト） ---
+      let token = localStorage.getItem('lpe-github-token');
+      if (!token) {
+        token = prompt('GitHub Token を入力（初回のみ・ブラウザに保存されます）\n\nターミナルで gh auth token を実行してコピーしてください');
+        if (!token) { showToast('❌ キャンセルされました'); return; }
+        localStorage.setItem('lpe-github-token', token);
+      }
+
+      // --- クリーンなHTMLを生成（エディタUI除去、scriptタグは保持） ---
+      disableEditing();
+      editing = false;
+
+      const root = document.getElementById('lp-editor-root');
+      const styles = document.getElementById('lp-editor-styles');
+      const pwBar = document.getElementById('lpe-pw-bar');
+      if (root) root.style.display = 'none';
+      if (styles) styles.remove();
+      if (pwBar) pwBar.remove();
+
+      const cleanHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+
+      // 復元
+      if (root) root.style.display = '';
+      if (styles) document.head.appendChild(styles);
+      createPasswordField();
+
+      // --- GitHub API: 現在のファイルSHA取得 ---
+      const apiBase = 'https://api.github.com/repos/' + owner + '/' + repo + '/contents/' + filePath;
+      const getRes = await fetch(apiBase, {
+        headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' }
+      });
+
+      if (getRes.status === 401) {
+        localStorage.removeItem('lpe-github-token');
+        showToast('❌ トークンが無効です。もう一度🚀を押してください');
+        return;
+      }
+      if (!getRes.ok) throw new Error('ファイル情報の取得に失敗');
+
+      const fileData = await getRes.json();
+      const sha = fileData.sha;
+
+      // --- GitHub API: ファイル更新 ---
+      const putRes = await fetch(apiBase, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'token ' + token,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: 'update: ' + new Date().toLocaleString('ja-JP'),
+          content: btoa(unescape(encodeURIComponent(cleanHtml))),
+          sha: sha
+        })
+      });
+
+      if (!putRes.ok) {
+        const err = await putRes.json().catch(() => ({}));
+        throw new Error(err.message || '保存に失敗');
+      }
+
+      showToast('✅ GitHubに保存しました！数秒で公開に反映されます');
+    } catch (e) {
+      showToast('❌ エラー: ' + e.message);
+    } finally {
+      publishBtn.classList.remove('saving');
+      publishBtn.textContent = '🚀';
+    }
   });
 
   // === トースト ===
