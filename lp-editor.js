@@ -156,6 +156,76 @@
       0%,100% { transform: scale(1); }
       50% { transform: scale(0.9); }
     }
+    .lpe-btn.lpe-color {
+      background: #e67e22;
+      color: #fff;
+      display: none;
+      font-size: 16px;
+    }
+    .lpe-color-palette {
+      position: fixed;
+      bottom: 88px;
+      right: 24px;
+      background: #1a1a2e;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 12px;
+      z-index: 99999;
+      display: none;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    }
+    .lpe-color-palette.show { display: block; }
+    .lpe-color-palette .lpe-palette-label {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .lpe-color-palette .lpe-palette-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .lpe-color-swatch {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .lpe-color-swatch:hover {
+      transform: scale(1.2);
+      border-color: #fff;
+    }
+    .lpe-color-custom {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .lpe-color-custom input[type="color"] {
+      width: 28px; height: 28px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      background: none;
+      padding: 0;
+    }
+    .lpe-color-custom span {
+      font-size: 11px;
+      color: #888;
+    }
+    .lpe-color-reset {
+      font-size: 11px;
+      color: #5a9bb5;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 4px 0;
+      margin-top: 4px;
+    }
+    .lpe-color-reset:hover { text-decoration: underline; }
+
     .lpe-btn.lpe-link {
       background: #7c3aed;
       color: #fff;
@@ -466,10 +536,36 @@
       <div class="lpe-page-dropzone-text">📁 画像をドロップして差し替え</div>
     </div>
     <div class="lpe-notice" id="lpeNotice">
-      ✏️ 編集モード — テキスト直接編集 / 画像: クリック・ドロップ・ペーストで差替え / ✕で削除
-      <span class="lpe-sub">🚀で公開保存 / 📥でダウンロード</span>
+      ✏️ 編集モード — テキスト直接編集 / 🎨文字色 / 画像: クリック・ドロップ・ペースト / ✕削除
+      <span class="lpe-sub">🚀公開保存 / 📥ダウンロード</span>
+    </div>
+    <div class="lpe-color-palette" id="lpeColorPalette">
+      <div class="lpe-palette-label">テーマカラー</div>
+      <div class="lpe-palette-row">
+        <div class="lpe-color-swatch" data-color="#5a9bb5" style="background:#5a9bb5" title="水"></div>
+        <div class="lpe-color-swatch" data-color="#7ec4d8" style="background:#7ec4d8" title="水(淡)"></div>
+        <div class="lpe-color-swatch" data-color="#c45848" style="background:#c45848" title="朱"></div>
+        <div class="lpe-color-swatch" data-color="#e8e2d6" style="background:#e8e2d6" title="月"></div>
+        <div class="lpe-color-swatch" data-color="#8b7eb8" style="background:#8b7eb8" title="藤"></div>
+        <div class="lpe-color-swatch" data-color="#a0aec0" style="background:#a0aec0" title="銀"></div>
+      </div>
+      <div class="lpe-palette-label">汎用カラー</div>
+      <div class="lpe-palette-row">
+        <div class="lpe-color-swatch" data-color="#ffffff" style="background:#ffffff" title="白"></div>
+        <div class="lpe-color-swatch" data-color="#f59e0b" style="background:#f59e0b" title="金"></div>
+        <div class="lpe-color-swatch" data-color="#ef4444" style="background:#ef4444" title="赤"></div>
+        <div class="lpe-color-swatch" data-color="#22c55e" style="background:#22c55e" title="緑"></div>
+        <div class="lpe-color-swatch" data-color="#3b82f6" style="background:#3b82f6" title="青"></div>
+        <div class="lpe-color-swatch" data-color="#ec4899" style="background:#ec4899" title="桃"></div>
+      </div>
+      <div class="lpe-color-custom">
+        <input type="color" id="lpeCustomColor" value="#5a9bb5">
+        <span>カスタム色</span>
+      </div>
+      <button class="lpe-color-reset" id="lpeColorReset">色をリセット</button>
     </div>
     <div class="lpe-toolbar">
+      <button class="lpe-btn lpe-color" id="lpeColorBtn" title="文字色を変更">🎨</button>
       <button class="lpe-btn lpe-link" id="lpeLinkBtn" title="リンク編集モード">🔗</button>
       <button class="lpe-btn lpe-save" id="lpeSaveBtn" title="HTMLダウンロード">📥</button>
       <button class="lpe-btn lpe-publish" id="lpePublishBtn" title="GitHubに保存・公開">🚀</button>
@@ -483,6 +579,10 @@
   const toggleBtn = document.getElementById('lpeToggle');
   const saveBtn = document.getElementById('lpeSaveBtn');
   const publishBtn = document.getElementById('lpePublishBtn');
+  const colorBtn = document.getElementById('lpeColorBtn');
+  const colorPalette = document.getElementById('lpeColorPalette');
+  const customColor = document.getElementById('lpeCustomColor');
+  const colorReset = document.getElementById('lpeColorReset');
   const linkBtn = document.getElementById('lpeLinkBtn');
   const notice = document.getElementById('lpeNotice');
   const imgModal = document.getElementById('lpeImgModal');
@@ -543,6 +643,7 @@
     toggleBtn.textContent = '✕';
     saveBtn.style.display = 'flex';
     publishBtn.style.display = 'flex';
+    colorBtn.style.display = 'flex';
     linkBtn.style.display = 'flex';
     notice.style.display = 'block';
 
@@ -651,6 +752,8 @@
     toggleBtn.textContent = '✏️';
     saveBtn.style.display = 'none';
     publishBtn.style.display = 'none';
+    colorBtn.style.display = 'none';
+    colorPalette.classList.remove('show');
     linkBtn.style.display = 'none';
     notice.style.display = 'none';
     linkEditing = false;
@@ -700,6 +803,52 @@
       linkEditing ? a.classList.add('lpe-link-editable') : a.classList.remove('lpe-link-editable');
     });
     showToast(linkEditing ? '🔗 リンク編集ON — リンクをクリック' : '🔗 リンク編集OFF');
+  });
+
+  // === 文字色変更 ===
+  colorBtn.addEventListener('click', function() {
+    colorPalette.classList.toggle('show');
+  });
+
+  // パレットのスウォッチクリック
+  colorPalette.querySelectorAll('.lpe-color-swatch').forEach(swatch => {
+    swatch.addEventListener('click', function() {
+      applyColor(this.dataset.color);
+    });
+  });
+
+  // カスタムカラーピッカー
+  customColor.addEventListener('input', function() {
+    applyColor(this.value);
+  });
+
+  // 色リセット
+  colorReset.addEventListener('click', function() {
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) {
+      showToast('💡 先にテキストを選択してください');
+      return;
+    }
+    document.execCommand('removeFormat', false, null);
+    showToast('🎨 色をリセットしました');
+  });
+
+  function applyColor(color) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) {
+      showToast('💡 先にテキストを選択してから色を選んでください');
+      return;
+    }
+    document.execCommand('foreColor', false, color);
+    colorPalette.classList.remove('show');
+    showToast('🎨 文字色を変更しました');
+  }
+
+  // パレット外クリックで閉じる
+  document.addEventListener('mousedown', function(e) {
+    if (!e.target.closest('.lpe-color-palette') && !e.target.closest('.lpe-color')) {
+      colorPalette.classList.remove('show');
+    }
   });
 
   // === ページ全体ドラッグ&ドロップ ===
