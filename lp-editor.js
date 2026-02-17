@@ -1010,7 +1010,11 @@
 
     const root = document.getElementById('lp-editor-root');
     const styles = document.getElementById('lp-editor-styles');
-    root.style.display = 'none';
+    const pwBar = document.getElementById('lpe-pw-bar');
+    // 完全に除去してクリーンなHTMLを生成
+    if (root) root.remove();
+    if (styles) styles.remove();
+    if (pwBar) pwBar.remove();
 
     const scripts = document.querySelectorAll('script');
     let editorScript = null;
@@ -1021,9 +1025,11 @@
 
     const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 
-    root.style.display = '';
+    // 復元
+    if (root) document.body.appendChild(root);
     if (editorScript) document.body.appendChild(editorScript);
     if (styles) document.head.appendChild(styles);
+    createPasswordField();
 
     const filename = document.title.replace(/[/\\?%*:|"<>]/g, '') || 'page';
     const blob = new Blob([html], { type: 'text/html; charset=utf-8' });
@@ -1074,21 +1080,22 @@
         localStorage.setItem('lpe-github-token', token);
       }
 
-      // --- クリーンなHTMLを生成（エディタUI除去、scriptタグは保持） ---
+      // --- クリーンなHTMLを生成（エディタUI完全除去、scriptタグは保持） ---
       disableEditing();
       editing = false;
 
       const root = document.getElementById('lp-editor-root');
       const styles = document.getElementById('lp-editor-styles');
       const pwBar = document.getElementById('lpe-pw-bar');
-      if (root) root.style.display = 'none';
+      // 完全に除去（display:noneだとHTMLに残ってしまう）
+      if (root) root.remove();
       if (styles) styles.remove();
       if (pwBar) pwBar.remove();
 
       const cleanHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 
       // 復元
-      if (root) root.style.display = '';
+      if (root) document.body.appendChild(root);
       if (styles) document.head.appendChild(styles);
       createPasswordField();
 

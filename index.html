@@ -1469,53 +1469,5 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 <!-- ビジュアル編集モード -->
 <script src="lp-editor.js?v=3.1"></script>
 
-
-
-<div id="lp-editor-root" style="display: none;">
-    <div class="lpe-overlay" id="lpeImgModal">
-      <div class="lpe-modal">
-        <h3>画像を変更</h3>
-        <p class="lpe-modal-desc">ドロップ / ペースト / ファイル選択 / URL入力</p>
-        <div class="lpe-drop-area" id="lpeDropArea">
-          <span class="lpe-drop-icon">📁</span>
-          ここに画像をドロップ、またはクリックでファイル選択
-          <div class="lpe-drop-or">Ctrl+V (⌘V) でクリップボードから貼り付けも可能</div>
-        </div>
-        <input type="file" id="lpeImgFile" accept="image/*" style="display:none">
-        <input type="text" id="lpeImgUrl" placeholder="または画像URL（https://...）">
-        <img class="lpe-preview" id="lpeImgPreview" style="display:none">
-        <div class="lpe-modal-btns">
-          <button class="lpe-modal-btn cancel" id="lpeImgCancel">キャンセル</button>
-          <button class="lpe-modal-btn ok" id="lpeImgOk">変更する</button>
-        </div>
-      </div>
-    </div>
-    <div class="lpe-overlay" id="lpeLinkModal">
-      <div class="lpe-modal">
-        <h3>リンクを編集</h3>
-        <p class="lpe-modal-desc">リンク先URLと表示テキストを編集できます</p>
-        <label>リンク先URL</label>
-        <input type="text" id="lpeLinkHref" placeholder="https://...">
-        <label>表示テキスト</label>
-        <input type="text" id="lpeLinkText" placeholder="ボタンの文字">
-        <div class="lpe-modal-btns">
-          <button class="lpe-modal-btn cancel" id="lpeLinkCancel">キャンセル</button>
-          <button class="lpe-modal-btn ok" id="lpeLinkOk">変更する</button>
-        </div>
-      </div>
-    </div>
-    <div class="lpe-page-dropzone" id="lpePageDrop">
-      <div class="lpe-page-dropzone-text">📁 画像をドロップして差し替え</div>
-    </div>
-    <div class="lpe-notice" id="lpeNotice" style="display: none;">
-      ✏️ 編集モード — テキスト直接編集 / 画像: クリック・ドロップ・ペーストで差替え / ✕で削除
-      <span class="lpe-sub">🚀で公開保存 / 📥でダウンロード</span>
-    </div>
-    <div class="lpe-toolbar">
-      <button class="lpe-btn lpe-link" id="lpeLinkBtn" title="リンク編集モード" style="display: none; background: rgb(124, 58, 237);">🔗</button>
-      <button class="lpe-btn lpe-save" id="lpeSaveBtn" title="HTMLダウンロード" style="display: none;">📥</button>
-      <button class="lpe-btn lpe-publish saving" id="lpePublishBtn" title="GitHubに保存・公開" style="display: none;">⏳</button>
-      <button class="lpe-btn lpe-toggle" id="lpeToggle" title="編集モード切替">✏️</button>
-    </div>
-    <div class="lpe-toast show" id="lpeToast">🚀 GitHubに保存中...</div>
-  </div></body></html>
+</body>
+</html>
