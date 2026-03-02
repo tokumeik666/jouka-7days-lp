@@ -163,6 +163,78 @@
       display: none;
       font-size: 16px;
     }
+    .lpe-btn.lpe-fontsize {
+      background: #8b5cf6;
+      color: #fff;
+      display: none;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .lpe-size-palette {
+      position: fixed;
+      bottom: 88px;
+      right: 24px;
+      background: #1a1a2e;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 12px;
+      z-index: 99999;
+      display: none;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      min-width: 180px;
+    }
+    .lpe-size-palette.show { display: block; }
+    .lpe-size-palette .lpe-palette-label {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    .lpe-size-option {
+      display: block;
+      width: 100%;
+      padding: 6px 12px;
+      background: none;
+      border: none;
+      color: #e0e0e0;
+      cursor: pointer;
+      text-align: left;
+      border-radius: 4px;
+      transition: background 0.15s;
+      font-family: 'Shippori Mincho', serif;
+    }
+    .lpe-size-option:hover {
+      background: rgba(139, 92, 246, 0.15);
+    }
+    .lpe-size-custom {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+    }
+    .lpe-size-custom input {
+      width: 60px;
+      padding: 4px 8px;
+      background: #0f0f1a;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 4px;
+      color: #e0e0e0;
+      font-size: 13px;
+      text-align: center;
+    }
+    .lpe-size-custom input:focus { outline: none; border-color: #8b5cf6; }
+    .lpe-size-custom span { font-size: 11px; color: #888; }
+    .lpe-size-custom button {
+      padding: 4px 10px;
+      background: #8b5cf6;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+    }
     .lpe-color-palette {
       position: fixed;
       bottom: 88px;
@@ -585,7 +657,23 @@
       </div>
       <button class="lpe-color-reset" id="lpeColorReset">色をリセット</button>
     </div>
+    <div class="lpe-size-palette" id="lpeSizePalette">
+      <div class="lpe-palette-label">文字サイズ</div>
+      <button class="lpe-size-option" data-size="0.75rem" style="font-size:0.75rem">小 (0.75rem)</button>
+      <button class="lpe-size-option" data-size="0.85rem" style="font-size:0.85rem">やや小 (0.85rem)</button>
+      <button class="lpe-size-option" data-size="0.95rem" style="font-size:0.95rem">標準 (0.95rem)</button>
+      <button class="lpe-size-option" data-size="1.1rem" style="font-size:1.1rem">やや大 (1.1rem)</button>
+      <button class="lpe-size-option" data-size="1.3rem" style="font-size:1.3rem">大 (1.3rem)</button>
+      <button class="lpe-size-option" data-size="1.6rem" style="font-size:1.6rem">特大 (1.6rem)</button>
+      <button class="lpe-size-option" data-size="2rem" style="font-size:2rem">見出し (2rem)</button>
+      <div class="lpe-size-custom">
+        <input type="number" id="lpeSizeCustom" min="8" max="80" value="16" step="1">
+        <span>px</span>
+        <button id="lpeSizeApply">適用</button>
+      </div>
+    </div>
     <div class="lpe-toolbar">
+      <button class="lpe-btn lpe-fontsize" id="lpeFontSizeBtn" title="文字サイズ変更">Aa</button>
       <button class="lpe-btn lpe-addimg" id="lpeAddImgBtn" title="画像を追加">🖼</button>
       <button class="lpe-btn lpe-color" id="lpeColorBtn" title="文字色を変更">🎨</button>
       <button class="lpe-btn lpe-link" id="lpeLinkBtn" title="リンク編集モード">🔗</button>
@@ -606,6 +694,10 @@
   const customColor = document.getElementById('lpeCustomColor');
   const colorReset = document.getElementById('lpeColorReset');
   const addImgBtn = document.getElementById('lpeAddImgBtn');
+  const fontSizeBtn = document.getElementById('lpeFontSizeBtn');
+  const sizePalette = document.getElementById('lpeSizePalette');
+  const sizeCustomInput = document.getElementById('lpeSizeCustom');
+  const sizeApplyBtn = document.getElementById('lpeSizeApply');
   const linkBtn = document.getElementById('lpeLinkBtn');
   const notice = document.getElementById('lpeNotice');
   const imgModal = document.getElementById('lpeImgModal');
@@ -671,6 +763,7 @@
     saveBtn.style.display = 'flex';
     publishBtn.style.display = 'flex';
     colorBtn.style.display = 'flex';
+    fontSizeBtn.style.display = 'flex';
     addImgBtn.style.display = 'flex';
     linkBtn.style.display = 'flex';
     notice.style.display = 'block';
@@ -800,8 +893,10 @@
     saveBtn.style.display = 'none';
     publishBtn.style.display = 'none';
     colorBtn.style.display = 'none';
+    fontSizeBtn.style.display = 'none';
     addImgBtn.style.display = 'none';
     colorPalette.classList.remove('show');
+    sizePalette.classList.remove('show');
     linkBtn.style.display = 'none';
     notice.style.display = 'none';
     linkEditing = false;
@@ -934,7 +1029,59 @@
     if (!e.target.closest('.lpe-color-palette') && !e.target.closest('.lpe-color')) {
       colorPalette.classList.remove('show');
     }
+    if (!e.target.closest('.lpe-size-palette') && !e.target.closest('.lpe-fontsize')) {
+      sizePalette.classList.remove('show');
+    }
   });
+
+  // === 文字サイズ変更 ===
+  fontSizeBtn.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    saveSelection();
+  });
+  fontSizeBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    sizePalette.classList.toggle('show');
+    colorPalette.classList.remove('show');
+  });
+
+  sizePalette.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+  });
+
+  sizePalette.querySelectorAll('.lpe-size-option').forEach(opt => {
+    opt.addEventListener('click', function(e) {
+      e.preventDefault();
+      applyFontSize(this.dataset.size);
+    });
+  });
+
+  sizeApplyBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    const px = parseInt(sizeCustomInput.value, 10);
+    if (px >= 8 && px <= 80) {
+      applyFontSize(px + 'px');
+    } else {
+      showToast('⚠️ 8〜80pxの範囲で入力してください');
+    }
+  });
+
+  function applyFontSize(size) {
+    if (!restoreSelection()) {
+      showToast('💡 先にテキストを選択してからサイズを選んでください');
+      return;
+    }
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    const span = document.createElement('span');
+    span.style.fontSize = size;
+    range.surroundContents(span);
+    sel.removeAllRanges();
+    sizePalette.classList.remove('show');
+    showToast('📏 文字サイズを ' + size + ' に変更しました');
+    savedSelection = null;
+  }
 
   // テキスト選択が変わったら自動保存
   document.addEventListener('selectionchange', function() {
