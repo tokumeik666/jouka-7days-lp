@@ -1,5 +1,5 @@
 /**
- * LP Visual Editor v2.1
+ * LP Visual Editor v3.0
  * どのHTMLにも1行追加するだけでnote風ビジュアル編集モードを追加
  *
  * 使い方: HTMLの</body>直前に以下を追加
@@ -14,18 +14,17 @@
  * 機能:
  *  ✏️ ボタンで編集モードON/OFF
  *  テキストをクリックして直接編集
+ *  🎨 文字色変更（選択範囲を保持して色適用）
  *  画像クリックで差し替え（URL / ファイル選択 / ドラッグ&ドロップ / ペースト）
+ *  🖼 新しい画像を追加
  *  画像ワンクリック削除（✕ボタン）
  *  リンクのhref+テキスト編集
  *  💾 ボタンでHTMLをダウンロード保存
+ *  🚀 GitHubに直接保存・公開
  */
 (function() {
   'use strict';
 
-  // === 起動方法 ===
-  // 1. ページ最下部のパスワード欄に入力
-  // 2. URLに ?edit を付ける（例: https://example.com/?edit）
-  // 3. キーボード Ctrl+Shift+E / ⌘+Shift+E
   const EDIT_PASSWORD = 'edit';
   let editorReady = false;
 
@@ -38,10 +37,7 @@
   }
 
   function run() {
-    // パスワード欄をページ最下部に設置
     createPasswordField();
-
-    // URLパラメータで自動起動
     if (location.search.includes('edit')) {
       editorReady = true;
       initEditor();
@@ -82,7 +78,6 @@
 
   boot();
 
-  // キーボードショートカットでも起動可能
   document.addEventListener('keydown', function(e) {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
       e.preventDefault();
@@ -158,6 +153,12 @@
     }
     .lpe-btn.lpe-color {
       background: #e67e22;
+      color: #fff;
+      display: none;
+      font-size: 16px;
+    }
+    .lpe-btn.lpe-addimg {
+      background: #0ea5e9;
       color: #fff;
       display: none;
       font-size: 16px;
@@ -268,7 +269,6 @@
     /* 編集中画像ラッパー */
     body.lpe-editing .lpe-img-wrap {
       position: relative !important;
-      display: inline-block;
       cursor: pointer;
     }
     body.lpe-editing .lpe-img-wrap:hover {
@@ -334,6 +334,27 @@
     body.lpe-editing .lpe-img-wrap.lpe-dragover .lpe-img-label {
       opacity: 1;
       background: rgba(22, 163, 106, 0.9);
+    }
+
+    /* 画像追加プレースホルダー */
+    body.lpe-editing .lpe-add-img-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      margin: 12px 0;
+      border: 2px dashed rgba(14, 165, 233, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: rgba(14, 165, 233, 0.6);
+      font-size: 13px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    }
+    body.lpe-editing .lpe-add-img-placeholder:hover {
+      border-color: #0ea5e9;
+      background: rgba(14, 165, 233, 0.05);
+      color: #0ea5e9;
     }
 
     /* ページ全体ドロップゾーン */
@@ -502,7 +523,7 @@
   wrapper.innerHTML = `
     <div class="lpe-overlay" id="lpeImgModal">
       <div class="lpe-modal">
-        <h3>画像を変更</h3>
+        <h3 id="lpeImgModalTitle">画像を変更</h3>
         <p class="lpe-modal-desc">ドロップ / ペースト / ファイル選択 / URL入力</p>
         <div class="lpe-drop-area" id="lpeDropArea">
           <span class="lpe-drop-icon">📁</span>
@@ -536,7 +557,7 @@
       <div class="lpe-page-dropzone-text">📁 画像をドロップして差し替え</div>
     </div>
     <div class="lpe-notice" id="lpeNotice">
-      ✏️ 編集モード — テキスト直接編集 / 🎨文字色 / 画像: クリック・ドロップ・ペースト / ✕削除
+      ✏️ 編集モード — テキスト直接編集 / 🎨文字色 / 🖼画像追加 / 画像クリックで差替え
       <span class="lpe-sub">🚀公開保存 / 📥ダウンロード</span>
     </div>
     <div class="lpe-color-palette" id="lpeColorPalette">
@@ -565,6 +586,7 @@
       <button class="lpe-color-reset" id="lpeColorReset">色をリセット</button>
     </div>
     <div class="lpe-toolbar">
+      <button class="lpe-btn lpe-addimg" id="lpeAddImgBtn" title="画像を追加">🖼</button>
       <button class="lpe-btn lpe-color" id="lpeColorBtn" title="文字色を変更">🎨</button>
       <button class="lpe-btn lpe-link" id="lpeLinkBtn" title="リンク編集モード">🔗</button>
       <button class="lpe-btn lpe-save" id="lpeSaveBtn" title="HTMLダウンロード">📥</button>
@@ -583,9 +605,11 @@
   const colorPalette = document.getElementById('lpeColorPalette');
   const customColor = document.getElementById('lpeCustomColor');
   const colorReset = document.getElementById('lpeColorReset');
+  const addImgBtn = document.getElementById('lpeAddImgBtn');
   const linkBtn = document.getElementById('lpeLinkBtn');
   const notice = document.getElementById('lpeNotice');
   const imgModal = document.getElementById('lpeImgModal');
+  const imgModalTitle = document.getElementById('lpeImgModalTitle');
   const imgUrl = document.getElementById('lpeImgUrl');
   const imgFile = document.getElementById('lpeImgFile');
   const imgPreview = document.getElementById('lpeImgPreview');
@@ -605,6 +629,9 @@
   let currentImg = null;
   let currentLink = null;
   let lastHoveredImg = null;
+  let savedSelection = null;
+  let imgInsertMode = false;     // true = 新規追加モード, false = 差し替えモード
+  let imgInsertTarget = null;    // 新規画像の挿入先要素
 
   const TEXT_SELECTOR = [
     'h1','h2','h3','h4','h5','h6',
@@ -644,6 +671,7 @@
     saveBtn.style.display = 'flex';
     publishBtn.style.display = 'flex';
     colorBtn.style.display = 'flex';
+    addImgBtn.style.display = 'flex';
     linkBtn.style.display = 'flex';
     notice.style.display = 'block';
 
@@ -668,7 +696,7 @@
       a.addEventListener('click', preventNav, true);
     });
 
-    // ページ全体ドラッグ&ドロップ（画像がない場所にドロップした時用）
+    // ページ全体ドラッグ&ドロップ
     document.addEventListener('dragenter', onPageDragEnter, true);
     document.addEventListener('dragover', onPageDragOver, true);
     document.addEventListener('dragleave', onPageDragLeave, true);
@@ -678,12 +706,23 @@
     document.addEventListener('paste', onPaste, true);
   }
 
-  // === 画像ラッパー作成 ===
+  // === 画像ラッパー作成（修正版：block/inline-blockを正しく判定） ===
   function wrapImage(img) {
     const wrap = document.createElement('div');
     wrap.className = 'lpe-img-wrap';
-    wrap.style.display = 'inline-block';
-    wrap.style.width = img.style.width || '';
+
+    // 画像の表示スタイルを継承
+    const computed = window.getComputedStyle(img);
+    const isBlock = computed.display === 'block';
+    wrap.style.display = isBlock ? 'block' : 'inline-block';
+    // 幅・最大幅・マージンを継承（CSSクラスの値をコピー）
+    if (isBlock) {
+      wrap.style.width = computed.width !== 'auto' ? '100%' : '';
+      wrap.style.maxWidth = computed.maxWidth;
+      wrap.style.margin = computed.margin;
+    } else {
+      wrap.style.width = img.style.width || '';
+    }
 
     // 削除ボタン
     const delBtn = document.createElement('button');
@@ -707,11 +746,19 @@
     wrap.appendChild(delBtn);
     wrap.appendChild(label);
 
-    // クリックで画像変更モーダル
-    wrap.addEventListener('click', function(e) {
-      if (e.target === delBtn) return;
+    // クリックで画像変更モーダル（イベント委譲で確実にキャッチ）
+    function onWrapClick(e) {
+      // 削除ボタンクリックは除外
+      if (e.target.closest('.lpe-img-del')) return;
       e.preventDefault();
       e.stopPropagation();
+      openImgModal(img);
+    }
+    wrap.addEventListener('click', onWrapClick);
+    // モバイル対応: touchendでも発火
+    wrap.addEventListener('touchend', function(e) {
+      if (e.target.closest('.lpe-img-del')) return;
+      e.preventDefault();
       openImgModal(img);
     });
 
@@ -753,6 +800,7 @@
     saveBtn.style.display = 'none';
     publishBtn.style.display = 'none';
     colorBtn.style.display = 'none';
+    addImgBtn.style.display = 'none';
     colorPalette.classList.remove('show');
     linkBtn.style.display = 'none';
     notice.style.display = 'none';
@@ -764,11 +812,17 @@
       el.classList.remove('lpe-editable');
     });
 
+    // 画像ラッパーを解除
     document.querySelectorAll('.lpe-img-wrap').forEach(wrap => {
       const img = wrap.querySelector('img');
-      if (img) wrap.parentNode.insertBefore(img, wrap);
+      if (img) {
+        wrap.parentNode.insertBefore(img, wrap);
+      }
       wrap.remove();
     });
+
+    // 画像追加プレースホルダーを削除
+    document.querySelectorAll('.lpe-add-img-placeholder').forEach(p => p.remove());
 
     document.querySelectorAll('a').forEach(a => {
       a.removeEventListener('click', preventNav, true);
@@ -805,43 +859,74 @@
     showToast(linkEditing ? '🔗 リンク編集ON — リンクをクリック' : '🔗 リンク編集OFF');
   });
 
+  // === 選択範囲の保存・復元 ===
+  function saveSelection() {
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0 && !sel.isCollapsed) {
+      savedSelection = sel.getRangeAt(0).cloneRange();
+    }
+  }
+
+  function restoreSelection() {
+    if (savedSelection) {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(savedSelection);
+      return true;
+    }
+    return false;
+  }
+
   // === 文字色変更 ===
-  colorBtn.addEventListener('click', function() {
+  colorBtn.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    saveSelection();
+  });
+  colorBtn.addEventListener('click', function(e) {
+    e.preventDefault();
     colorPalette.classList.toggle('show');
+  });
+
+  // パレット自体のmousedownで選択が消えるのを防止
+  colorPalette.addEventListener('mousedown', function(e) {
+    e.preventDefault();
   });
 
   // パレットのスウォッチクリック
   colorPalette.querySelectorAll('.lpe-color-swatch').forEach(swatch => {
-    swatch.addEventListener('click', function() {
+    swatch.addEventListener('click', function(e) {
+      e.preventDefault();
       applyColor(this.dataset.color);
     });
   });
 
   // カスタムカラーピッカー
   customColor.addEventListener('input', function() {
+    restoreSelection();
     applyColor(this.value);
   });
 
   // 色リセット
-  colorReset.addEventListener('click', function() {
-    const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed) {
+  colorReset.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (!restoreSelection()) {
       showToast('💡 先にテキストを選択してください');
       return;
     }
     document.execCommand('removeFormat', false, null);
     showToast('🎨 色をリセットしました');
+    savedSelection = null;
   });
 
   function applyColor(color) {
-    const sel = window.getSelection();
-    if (!sel.rangeCount || sel.isCollapsed) {
+    if (!restoreSelection()) {
       showToast('💡 先にテキストを選択してから色を選んでください');
       return;
     }
     document.execCommand('foreColor', false, color);
     colorPalette.classList.remove('show');
     showToast('🎨 文字色を変更しました');
+    savedSelection = null;
   }
 
   // パレット外クリックで閉じる
@@ -849,6 +934,61 @@
     if (!e.target.closest('.lpe-color-palette') && !e.target.closest('.lpe-color')) {
       colorPalette.classList.remove('show');
     }
+  });
+
+  // テキスト選択が変わったら自動保存
+  document.addEventListener('selectionchange', function() {
+    if (!editing) return;
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0 && !sel.isCollapsed) {
+      const anchor = sel.anchorNode;
+      if (anchor && !isEditorEl(anchor.parentElement || anchor)) {
+        savedSelection = sel.getRangeAt(0).cloneRange();
+      }
+    }
+  });
+
+  // === 画像追加モード ===
+  addImgBtn.addEventListener('click', function() {
+    // 画像追加用プレースホルダーを表示/非表示
+    const existing = document.querySelectorAll('.lpe-add-img-placeholder');
+    if (existing.length > 0) {
+      existing.forEach(p => p.remove());
+      addImgBtn.style.background = '#0ea5e9';
+      showToast('🖼 画像追加モードOFF');
+      return;
+    }
+
+    addImgBtn.style.background = '#dc2626';
+    showToast('🖼 「+画像」をクリックして挿入場所を選んでください');
+
+    // セクション(.container)内の各要素の後に「+画像」プレースホルダーを挿入
+    const containers = document.querySelectorAll('.container, .hero-content, section');
+    const targets = new Set();
+    containers.forEach(container => {
+      const children = container.children;
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (isEditorEl(child)) continue;
+        if (child.classList.contains('lpe-add-img-placeholder')) continue;
+        if (child.classList.contains('lpe-img-wrap')) continue;
+        // sectionやcontainer自体はスキップ
+        if (child.tagName === 'SECTION' || child.classList.contains('container')) continue;
+        targets.add(child);
+      }
+    });
+
+    targets.forEach(target => {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'lpe-add-img-placeholder';
+      placeholder.innerHTML = '＋ ここに画像を追加';
+      placeholder.addEventListener('click', function() {
+        imgInsertMode = true;
+        imgInsertTarget = target;
+        openImgModal(null);
+      });
+      target.parentNode.insertBefore(placeholder, target.nextSibling);
+    });
   });
 
   // === ページ全体ドラッグ&ドロップ ===
@@ -870,7 +1010,6 @@
     }
   }
   async function onPageDrop(e) {
-    // 個別画像ラッパーでハンドル済みなら無視
     if (e.target.closest('.lpe-img-wrap')) {
       pageDrop.classList.remove('show');
       dragCounter = 0;
@@ -881,7 +1020,6 @@
     dragCounter = 0;
     const file = getImageFile(e.dataTransfer);
     if (!file) return;
-    // 最も近い画像を差し替え or ホバー中の画像
     if (lastHoveredImg) {
       lastHoveredImg.src = await fileToDataUrl(file);
       showToast('✅ 画像を差し替えました');
@@ -902,7 +1040,7 @@
         const dataUrl = await fileToDataUrl(file);
 
         // モーダルが開いている場合はそこにセット
-        if (imgModal.classList.contains('show') && currentImg) {
+        if (imgModal.classList.contains('show')) {
           imgUrl.value = dataUrl;
           imgPreview.src = dataUrl;
           imgPreview.style.display = 'block';
@@ -927,12 +1065,26 @@
     }
   }
 
-  // === 画像モーダル ===
+  // === 画像モーダル（差し替え＆新規追加 共用）===
   function openImgModal(img) {
-    currentImg = img;
-    imgUrl.value = img.src;
-    imgPreview.src = img.src;
-    imgPreview.style.display = 'block';
+    if (img) {
+      // 差し替えモード
+      imgInsertMode = false;
+      currentImg = img;
+      imgModalTitle.textContent = '画像を変更';
+      imgOk.textContent = '変更する';
+      imgUrl.value = img.src;
+      imgPreview.src = img.src;
+      imgPreview.style.display = 'block';
+    } else {
+      // 新規追加モード
+      imgInsertMode = true;
+      currentImg = null;
+      imgModalTitle.textContent = '画像を追加';
+      imgOk.textContent = '追加する';
+      imgUrl.value = '';
+      imgPreview.style.display = 'none';
+    }
     imgFile.value = '';
     imgModal.classList.add('show');
   }
@@ -972,16 +1124,44 @@
   });
 
   imgOk.addEventListener('click', function() {
-    if (currentImg && imgUrl.value) {
-      currentImg.src = imgUrl.value;
+    const url = imgUrl.value;
+    if (!url) {
+      showToast('⚠️ 画像URLまたはファイルを指定してください');
+      return;
+    }
+
+    if (imgInsertMode && imgInsertTarget) {
+      // 新規画像を追加
+      const newImg = document.createElement('img');
+      newImg.src = url;
+      newImg.alt = '';
+      newImg.className = 'full-img';
+      newImg.style.cssText = 'width:100%;max-width:600px;display:block;margin:32px auto;border-radius:2px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 40px rgba(0,0,0,0.4),0 0 1px rgba(90,155,181,0.1);';
+      // 挿入先の後に追加
+      imgInsertTarget.parentNode.insertBefore(newImg, imgInsertTarget.nextSibling);
+      // すぐにラップ
+      wrapImage(newImg);
+      // プレースホルダーを全削除
+      document.querySelectorAll('.lpe-add-img-placeholder').forEach(p => p.remove());
+      addImgBtn.style.background = '#0ea5e9';
+      showToast('✅ 画像を追加しました');
+    } else if (currentImg) {
+      // 既存画像を差し替え
+      currentImg.src = url;
       showToast('✅ 画像を変更しました');
     }
+
     closeImgModal();
   });
 
   imgCancel.addEventListener('click', closeImgModal);
   imgModal.addEventListener('click', function(e) { if (e.target === imgModal) closeImgModal(); });
-  function closeImgModal() { imgModal.classList.remove('show'); currentImg = null; }
+  function closeImgModal() {
+    imgModal.classList.remove('show');
+    currentImg = null;
+    imgInsertMode = false;
+    imgInsertTarget = null;
+  }
 
   // === リンクモーダル ===
   function openLinkModal(a) {
@@ -1011,7 +1191,6 @@
     const root = document.getElementById('lp-editor-root');
     const styles = document.getElementById('lp-editor-styles');
     const pwBar = document.getElementById('lpe-pw-bar');
-    // 完全に除去してクリーンなHTMLを生成
     if (root) root.remove();
     if (styles) styles.remove();
     if (pwBar) pwBar.remove();
@@ -1025,7 +1204,6 @@
 
     const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 
-    // 復元
     if (root) document.body.appendChild(root);
     if (editorScript) document.body.appendChild(editorScript);
     if (styles) document.head.appendChild(styles);
@@ -1052,7 +1230,6 @@
     showToast('🚀 GitHubに保存中...');
 
     try {
-      // --- GitHub情報を自動検出 ---
       let owner, repo, filePath = 'index.html';
       const hostname = location.hostname;
       if (hostname.endsWith('.github.io')) {
@@ -1072,7 +1249,6 @@
         return;
       }
 
-      // --- トークン取得（初回はプロンプト） ---
       let token = localStorage.getItem('lpe-github-token');
       if (!token) {
         token = prompt('GitHub Token を入力（初回のみ・ブラウザに保存されます）\n\nターミナルで gh auth token を実行してコピーしてください');
@@ -1080,26 +1256,22 @@
         localStorage.setItem('lpe-github-token', token);
       }
 
-      // --- クリーンなHTMLを生成（エディタUI完全除去、scriptタグは保持） ---
       disableEditing();
       editing = false;
 
       const root = document.getElementById('lp-editor-root');
       const styles = document.getElementById('lp-editor-styles');
       const pwBar = document.getElementById('lpe-pw-bar');
-      // 完全に除去（display:noneだとHTMLに残ってしまう）
       if (root) root.remove();
       if (styles) styles.remove();
       if (pwBar) pwBar.remove();
 
       const cleanHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 
-      // 復元
       if (root) document.body.appendChild(root);
       if (styles) document.head.appendChild(styles);
       createPasswordField();
 
-      // --- GitHub API: 現在のファイルSHA取得 ---
       const apiBase = 'https://api.github.com/repos/' + owner + '/' + repo + '/contents/' + filePath;
       const getRes = await fetch(apiBase, {
         headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' }
@@ -1115,7 +1287,6 @@
       const fileData = await getRes.json();
       const sha = fileData.sha;
 
-      // --- GitHub API: ファイル更新 ---
       const putRes = await fetch(apiBase, {
         method: 'PUT',
         headers: {
