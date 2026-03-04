@@ -417,7 +417,7 @@ function handleSubmit(body) {
     return createErrorResponse('すでに7日間のプログラムを完了しています。', 'ALREADY_COMPLETED');
   }
 
-  // Day unlock ロジック: Day N は Day N-1 が完了済みの場合のみ
+  // Day unlock ロジック: Day N は Day N-1 が完了済み + 24時間経過の場合のみ
   if (day > 1) {
     const prevDayAnswer = sheet.getRange(row, dayAnswerCol(day - 1)).getValue();
     if (!prevDayAnswer || prevDayAnswer === '') {
@@ -425,6 +425,23 @@ function handleSubmit(body) {
         'Day ' + (day - 1) + ' がまだ完了していません。順番に進めてください。',
         'DAY_LOCKED'
       );
+    }
+
+    // 24時間ロックチェック
+    const prevDayTimestamp = sheet.getRange(row, dayTimestampCol(day - 1)).getValue();
+    if (prevDayTimestamp) {
+      const prevDate = new Date(prevDayTimestamp);
+      const now = new Date();
+      const hoursPassed = (now.getTime() - prevDate.getTime()) / (1000 * 60 * 60);
+      if (hoursPassed < 24) {
+        const unlockAt = new Date(prevDate.getTime() + 24 * 60 * 60 * 1000);
+        const unlockAtStr = Utilities.formatDate(unlockAt, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+        const remainHours = Math.ceil(24 - hoursPassed);
+        return createErrorResponse(
+          'Day ' + day + ' は ' + unlockAtStr + ' に解放されます。（残り約' + remainHours + '時間）',
+          'TIME_LOCKED',
+        );
+      }
     }
   }
 
@@ -492,18 +509,46 @@ function buildProgressObject(rowData) {
   const days = {};
   let daysCompleted = 0;
   let currentDay = 1;
+  const now = new Date();
 
   for (var d = 1; d <= 7; d++) {
     var answerVal = rowData[dayAnswerCol(d) - 1];
     var timestampVal = rowData[dayTimestampCol(d) - 1];
     var hasAnswer = answerVal && answerVal !== '';
 
+    // unlock判定: Day1は常に解放、Day2以降は前日完了 + 24時間経過
+    var isUnlocked = false;
+    var unlockAt = null;
+    var isTimeLocked = false;
+
+    if (d === 1) {
+      isUnlocked = true;
+    } else {
+      var prevAnswer = rowData[dayAnswerCol(d - 1) - 1];
+      var prevTimestamp = rowData[dayTimestampCol(d - 1) - 1];
+      if (prevAnswer && prevAnswer !== '' && prevTimestamp) {
+        var prevDate = new Date(prevTimestamp);
+        var unlockTime = new Date(prevDate.getTime() + 24 * 60 * 60 * 1000);
+        if (now.getTime() >= unlockTime.getTime()) {
+          isUnlocked = true;
+        } else {
+          isTimeLocked = true;
+          unlockAt = Utilities.formatDate(unlockTime, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+        }
+      }
+    }
+
+    // 既に回答済みなら解放済み扱い
+    if (hasAnswer) isUnlocked = true;
+
     days['day' + d] = {
       question: DAILY_QUESTIONS[d - 1],
       answer: hasAnswer ? answerVal : null,
       answered_at: hasAnswer ? formatDate(timestampVal) : null,
       is_completed: hasAnswer,
-      is_unlocked: d === 1 || (rowData[dayAnswerCol(d - 1) - 1] && rowData[dayAnswerCol(d - 1) - 1] !== ''),
+      is_unlocked: isUnlocked,
+      is_time_locked: isTimeLocked,
+      unlock_at: unlockAt,
     };
 
     if (hasAnswer) {

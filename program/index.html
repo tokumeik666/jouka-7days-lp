@@ -733,6 +733,52 @@ body::after {
   transform: translateX(-50%) translateY(0);
 }
 
+/* ===== Time Lock ===== */
+.time-lock-wrap {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 28px 24px;
+  background: linear-gradient(135deg, rgba(139, 126, 184, 0.05), rgba(139, 126, 184, 0.01));
+  border: 1px solid rgba(139, 126, 184, 0.12);
+  border-radius: 4px;
+  text-align: center;
+}
+.time-lock-icon {
+  font-size: 1.4rem;
+  color: var(--fuji);
+  opacity: 0.4;
+  margin-bottom: 12px;
+}
+.time-lock-msg {
+  font-size: 0.82rem;
+  color: var(--tsuki-dim);
+  line-height: 2.2;
+  margin-bottom: 16px;
+}
+.time-lock-countdown {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--fuji);
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 30px rgba(139, 126, 184, 0.15);
+}
+.time-lock-countdown-sub {
+  font-size: 0.7rem;
+  color: var(--gin);
+  margin-top: 4px;
+  opacity: 0.5;
+}
+.moon-day.time-locked {
+  opacity: 0.5;
+  border-color: rgba(139, 126, 184, 0.25);
+  animation: timeLockPulse 4s ease-in-out infinite;
+}
+@keyframes timeLockPulse {
+  0%, 100% { border-color: rgba(139, 126, 184, 0.15); }
+  50% { border-color: rgba(139, 126, 184, 0.35); }
+}
+
 /* ===== Water Line Divider ===== */
 .water-line {
   border: none;
@@ -809,6 +855,13 @@ body::after {
     <div class="day-status fade-in d3" id="dayStatus">
       <div class="day-status-label" id="dayStatusLabel"></div>
       <div class="day-status-question" id="dayStatusQuestion"></div>
+    </div>
+
+    <div class="time-lock-wrap fade-in d4" id="timeLockWrap" style="display:none;">
+      <div class="time-lock-icon">&#9790;</div>
+      <div class="time-lock-msg">次のワークまで、心を静かに休めてください。</div>
+      <div class="time-lock-countdown" id="timeLockCountdown"></div>
+      <div class="time-lock-countdown-sub">後に解放されます</div>
     </div>
 
     <button class="btn-start-day fade-in d4" id="btnStartDay">今日のワークを始める</button>
@@ -939,9 +992,12 @@ const DONE_MESSAGES = [
 let state = {
   uid: null,
   name: '',
-  progress: [],  // [true, false, false, ...] 各Dayの完了状態
+  progress: [],       // [true, false, false, ...] 各Dayの完了状態
+  timeLocked: [],     // [false, false, true, ...] 24h ロック状態
+  unlockTimes: [],    // [null, null, '2026-03-06 22:30:00', ...] 解放日時
   currentDay: 1
 };
+let countdownInterval = null;
 
 // ===== DOM =====
 const $ = id => document.getElementById(id);
@@ -1066,32 +1122,82 @@ function localMode(action, data) {
         progress: { days: {}, days_completed: 0, current_day: 1 }
       };
       for (let d = 1; d <= 7; d++) {
-        local.progress.days['day' + d] = { is_completed: false, is_unlocked: d === 1 };
+        local.progress.days['day' + d] = {
+          is_completed: false, is_unlocked: d === 1,
+          is_time_locked: false, unlock_at: null, answered_at: null
+        };
       }
       localStorage.setItem(key, JSON.stringify(local));
       return { success: true, is_new: true, name: data.name, current_day: 1, progress: local.progress };
 
     case 'status':
       if (!local) return { success: true, registered: false };
+      // 24時間ロック再計算
+      recalcLocalTimeLocks(local);
+      localStorage.setItem(key, JSON.stringify(local));
       return { success: true, registered: true, name: local.name, progress: local.progress, current_day: local.progress.current_day };
 
     case 'submit':
       if (!local) return { success: false, error: 'not_found' };
       const dayIdx = parseInt(data.day);
-      local.progress.days['day' + dayIdx].is_completed = true;
+      const dayKey = 'day' + dayIdx;
+
+      // 24時間ロックチェック
+      if (local.progress.days[dayKey].is_time_locked) {
+        return { success: false, error: '次のワークまでもう少しお待ちください。', code: 'TIME_LOCKED' };
+      }
+
+      const now = new Date().toISOString();
+      local.progress.days[dayKey].is_completed = true;
+      local.progress.days[dayKey].answered_at = now;
       local.progress.days_completed++;
+
+      // 次のDayのロック状態を設定
       if (dayIdx < 7) {
-        local.progress.days['day' + (dayIdx + 1)].is_unlocked = true;
+        const nextKey = 'day' + (dayIdx + 1);
+        const unlockAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        local.progress.days[nextKey].is_time_locked = true;
+        local.progress.days[nextKey].unlock_at = unlockAt.toISOString().replace('T', ' ').substring(0, 19);
         local.progress.current_day = dayIdx + 1;
       } else {
         local.progress.current_day = 7;
       }
+
       localStorage.setItem(key, JSON.stringify(local));
       return { success: true, day: dayIdx, is_complete: dayIdx === 7 };
 
     default:
       return { success: false, error: 'unknown_action' };
   }
+}
+
+// ===== ローカルモードの24時間ロック再計算 =====
+function recalcLocalTimeLocks(local) {
+  const now = Date.now();
+  let currentDay = 1;
+
+  for (let d = 1; d <= 7; d++) {
+    const dayData = local.progress.days['day' + d];
+    if (dayData.is_completed) {
+      currentDay = Math.min(d + 1, 7);
+    } else if (dayData.is_time_locked && dayData.unlock_at) {
+      const unlockTime = new Date(dayData.unlock_at.replace(' ', 'T') + (dayData.unlock_at.includes('+') ? '' : '+09:00'));
+      if (now >= unlockTime.getTime()) {
+        // ロック解除
+        dayData.is_time_locked = false;
+        dayData.unlock_at = null;
+        dayData.is_unlocked = true;
+        currentDay = d;
+      } else {
+        currentDay = d;
+      }
+      break;
+    } else {
+      currentDay = d;
+      break;
+    }
+  }
+  local.progress.current_day = currentDay;
 }
 
 // ===== LOAD PROGRESS =====
@@ -1122,24 +1228,26 @@ async function loadProgress() {
 
 // ===== PARSE PROGRESS from GAS =====
 function parseProgress(progressData) {
-  if (!progressData) {
-    state.progress = [false,false,false,false,false,false,false];
-    state.currentDay = 1;
-    return;
-  }
+  state.progress = [false,false,false,false,false,false,false];
+  state.timeLocked = [false,false,false,false,false,false,false];
+  state.unlockTimes = [null,null,null,null,null,null,null];
+  state.currentDay = 1;
 
-  // GAS format: { days: { day1: {is_completed}, ... }, current_day, days_completed }
+  if (!progressData) return;
+
+  // GAS format: { days: { day1: {is_completed, is_time_locked, unlock_at}, ... }, current_day }
   if (progressData.days) {
-    state.progress = [];
     for (let d = 1; d <= 7; d++) {
       const dayData = progressData.days['day' + d];
-      state.progress.push(dayData ? dayData.is_completed : false);
+      if (dayData) {
+        state.progress[d - 1] = !!dayData.is_completed;
+        state.timeLocked[d - 1] = !!dayData.is_time_locked;
+        state.unlockTimes[d - 1] = dayData.unlock_at || null;
+      }
     }
     state.currentDay = progressData.current_day || 1;
   } else if (Array.isArray(progressData)) {
-    // Simple array format
     state.progress = progressData;
-    state.currentDay = 1;
     for (let i = 0; i < 7; i++) {
       if (state.progress[i]) {
         state.currentDay = Math.min(i + 2, 7);
@@ -1195,6 +1303,8 @@ async function handleEnter() {
 
 // ===== RENDER DASHBOARD =====
 function renderDashboard() {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+
   // Greeting
   $('dashGreeting').textContent = state.name + ' 様の浄化の旅';
 
@@ -1206,12 +1316,17 @@ function renderDashboard() {
 
   const allDone = state.progress.every(p => p);
 
+  // 現在のDayがタイムロック中か判定
+  const isCurrentDayTimeLocked = !allDone && state.timeLocked[state.currentDay - 1];
+
   for (let i = 0; i < 7; i++) {
     const day = document.createElement('div');
     day.className = 'moon-day phase-' + (i + 1);
 
     if (state.progress[i]) {
       day.classList.add('completed');
+    } else if (state.timeLocked[i]) {
+      day.classList.add('time-locked');
     } else if (i + 1 === state.currentDay) {
       day.classList.add('current');
       day.addEventListener('click', handleStartDay);
@@ -1225,22 +1340,38 @@ function renderDashboard() {
     const label = document.createElement('span');
     label.textContent = (i + 1) + '日目';
     if (state.progress[i]) label.className = 'completed-label';
+    else if (state.timeLocked[i]) label.className = '';
     else if (i + 1 === state.currentDay) label.className = 'current-label';
     labelWrap.appendChild(label);
   }
 
-  // Day Status
+  // Day Status & Time Lock
   const statusLabel = $('dayStatusLabel');
   const statusQ = $('dayStatusQuestion');
   const btnStart = $('btnStartDay');
   const completedMsg = $('completedMsg');
+  const timeLockWrap = $('timeLockWrap');
 
   if (allDone) {
     statusLabel.textContent = '全 日 程 完 了';
     statusQ.textContent = '7日間の浄化が完了しました。あなたの心の器は、空っぽになりました。';
     btnStart.style.display = 'none';
+    timeLockWrap.style.display = 'none';
     completedMsg.style.display = 'block';
     completedMsg.textContent = '浄化完了 — お疲れ様でした';
+  } else if (isCurrentDayTimeLocked) {
+    // 24時間ロック中
+    statusLabel.textContent = '第 ' + state.currentDay + ' 日 の ワ ー ク';
+    statusQ.textContent = '浄化のエネルギーが浸透するまで、しばらくお待ちください。';
+    btnStart.style.display = 'none';
+    completedMsg.style.display = 'none';
+    timeLockWrap.style.display = '';
+
+    // カウントダウン開始
+    const unlockTimeStr = state.unlockTimes[state.currentDay - 1];
+    if (unlockTimeStr) {
+      startCountdown(unlockTimeStr);
+    }
   } else {
     statusLabel.textContent = '第 ' + state.currentDay + ' 日 の ワ ー ク';
     statusQ.textContent = QUESTIONS[state.currentDay - 1].replace(/\n/g, '');
@@ -1250,7 +1381,37 @@ function renderDashboard() {
     btnStart.style.display = '';
     btnStart.textContent = state.currentDay === 1 ? '浄化を始める' : '今日のワークを始める';
     completedMsg.style.display = 'none';
+    timeLockWrap.style.display = 'none';
   }
+}
+
+// ===== COUNTDOWN TIMER =====
+function startCountdown(unlockTimeStr) {
+  // Parse "2026-03-06 22:30:00" format (JST)
+  const unlockDate = new Date(unlockTimeStr.replace(' ', 'T') + '+09:00');
+
+  function updateCountdown() {
+    const now = new Date();
+    const diff = unlockDate.getTime() - now.getTime();
+
+    if (diff <= 0) {
+      // ロック解除 → リロード
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+      loadProgress();
+      return;
+    }
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+    const pad = n => String(n).padStart(2, '0');
+    $('timeLockCountdown').textContent = pad(hours) + ':' + pad(mins) + ':' + pad(secs);
+  }
+
+  updateCountdown();
+  countdownInterval = setInterval(updateCountdown, 1000);
 }
 
 // ===== START DAY =====
@@ -1299,8 +1460,11 @@ async function handleSubmit() {
     answer: answer
   });
 
-  if (result.error) {
-    showToast('送信に失敗しました。もう一度お試しください。');
+  if (!result.success || result.error) {
+    const errMsg = result.code === 'TIME_LOCKED'
+      ? result.error
+      : '送信に失敗しました。もう一度お試しください。';
+    showToast(errMsg);
     showScreen('screen-question');
     $('btnSubmit').disabled = false;
     $('btnSubmit').textContent = '送信する';
