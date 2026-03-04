@@ -163,6 +163,54 @@
       display: none;
       font-size: 16px;
     }
+    .lpe-btn.lpe-addvideo {
+      background: #ef4444;
+      color: #fff;
+      display: none;
+      font-size: 16px;
+    }
+
+    /* 動画追加プレースホルダー */
+    body.lpe-editing .lpe-add-video-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      margin: 12px 0;
+      border: 2px dashed rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: rgba(239, 68, 68, 0.6);
+      font-size: 13px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    }
+    body.lpe-editing .lpe-add-video-placeholder:hover {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.05);
+      color: #ef4444;
+    }
+
+    /* 動画ラッパー（レスポンシブ） */
+    .lpe-video-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      margin: 32px auto;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 2px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+    .lpe-video-container iframe,
+    .lpe-video-container video {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
+    }
+
     .lpe-btn.lpe-fontsize {
       background: #8b5cf6;
       color: #fff;
@@ -741,6 +789,20 @@
         </div>
       </div>
     </div>
+    <div class="lpe-overlay" id="lpeVideoModal">
+      <div class="lpe-modal">
+        <h3>動画を追加</h3>
+        <p class="lpe-modal-desc">YouTube / Vimeo のURLを貼り付け、または動画ファイルURL</p>
+        <input type="text" id="lpeVideoUrl" placeholder="https://www.youtube.com/watch?v=... または動画URL">
+        <div id="lpeVideoPreviewWrap" style="margin:12px 0;display:none;">
+          <div id="lpeVideoPreview" style="position:relative;width:100%;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:6px;border:1px solid rgba(255,255,255,0.08);"></div>
+        </div>
+        <div class="lpe-modal-btns">
+          <button class="lpe-modal-btn cancel" id="lpeVideoCancel">キャンセル</button>
+          <button class="lpe-modal-btn ok" id="lpeVideoOk">追加する</button>
+        </div>
+      </div>
+    </div>
     <div class="lpe-page-dropzone" id="lpePageDrop">
       <div class="lpe-page-dropzone-text">📁 画像をドロップして差し替え</div>
     </div>
@@ -798,6 +860,7 @@
     <div class="lpe-toolbar">
       <button class="lpe-btn lpe-addtext" id="lpeAddTextBtn" title="テキストを追加">T+</button>
       <button class="lpe-btn lpe-fontsize" id="lpeFontSizeBtn" title="文字サイズ変更">Aa</button>
+      <button class="lpe-btn lpe-addvideo" id="lpeAddVideoBtn" title="動画を追加">🎬</button>
       <button class="lpe-btn lpe-addimg" id="lpeAddImgBtn" title="画像を追加">🖼</button>
       <button class="lpe-btn lpe-color" id="lpeColorBtn" title="文字色を変更">🎨</button>
       <button class="lpe-btn lpe-link" id="lpeLinkBtn" title="リンク編集モード">🔗</button>
@@ -818,6 +881,13 @@
   const customColor = document.getElementById('lpeCustomColor');
   const colorReset = document.getElementById('lpeColorReset');
   const addImgBtn = document.getElementById('lpeAddImgBtn');
+  const addVideoBtn = document.getElementById('lpeAddVideoBtn');
+  const videoModal = document.getElementById('lpeVideoModal');
+  const videoUrl = document.getElementById('lpeVideoUrl');
+  const videoPreviewWrap = document.getElementById('lpeVideoPreviewWrap');
+  const videoPreview = document.getElementById('lpeVideoPreview');
+  const videoOk = document.getElementById('lpeVideoOk');
+  const videoCancel = document.getElementById('lpeVideoCancel');
   const addTextBtn = document.getElementById('lpeAddTextBtn');
   const textTypeSelector = document.getElementById('lpeTextTypeSelector');
   const fontSizeBtn = document.getElementById('lpeFontSizeBtn');
@@ -891,6 +961,7 @@
     colorBtn.style.display = 'flex';
     fontSizeBtn.style.display = 'flex';
     addTextBtn.style.display = 'flex';
+    addVideoBtn.style.display = 'flex';
     addImgBtn.style.display = 'flex';
     linkBtn.style.display = 'flex';
     notice.style.display = 'block';
@@ -1026,6 +1097,7 @@
     colorBtn.style.display = 'none';
     fontSizeBtn.style.display = 'none';
     addTextBtn.style.display = 'none';
+    addVideoBtn.style.display = 'none';
     addImgBtn.style.display = 'none';
     colorPalette.classList.remove('show');
     sizePalette.classList.remove('show');
@@ -1064,6 +1136,7 @@
     // プレースホルダーを削除
     document.querySelectorAll('.lpe-add-img-placeholder').forEach(p => p.remove());
     document.querySelectorAll('.lpe-add-text-placeholder').forEach(p => p.remove());
+    document.querySelectorAll('.lpe-add-video-placeholder').forEach(p => p.remove());
 
     document.querySelectorAll('a').forEach(a => {
       a.removeEventListener('click', preventNav, true);
@@ -1451,6 +1524,150 @@
       });
       target.parentNode.insertBefore(placeholder, target.nextSibling);
     });
+  });
+
+  // === 動画追加モード ===
+  let videoInsertTarget = null;
+
+  function parseVideoUrl(url) {
+    // YouTube
+    let m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
+    if (m) return { type: 'youtube', id: m[1] };
+    // Vimeo
+    m = url.match(/vimeo\.com\/(\d+)/);
+    if (m) return { type: 'vimeo', id: m[1] };
+    // 直接URL（mp4等）
+    if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) return { type: 'file', url: url };
+    // その他のURLはiframeで試行
+    if (url.startsWith('http')) return { type: 'iframe', url: url };
+    return null;
+  }
+
+  function createVideoEmbed(info) {
+    const container = document.createElement('div');
+    container.className = 'lpe-video-container';
+
+    if (info.type === 'youtube') {
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://www.youtube.com/embed/' + info.id;
+      iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      iframe.allowFullscreen = true;
+      container.appendChild(iframe);
+    } else if (info.type === 'vimeo') {
+      const iframe = document.createElement('iframe');
+      iframe.src = 'https://player.vimeo.com/video/' + info.id;
+      iframe.allow = 'autoplay; fullscreen; picture-in-picture';
+      iframe.allowFullscreen = true;
+      container.appendChild(iframe);
+    } else if (info.type === 'file') {
+      const video = document.createElement('video');
+      video.src = info.url;
+      video.controls = true;
+      video.preload = 'metadata';
+      container.appendChild(video);
+    } else if (info.type === 'iframe') {
+      const iframe = document.createElement('iframe');
+      iframe.src = info.url;
+      iframe.allowFullscreen = true;
+      container.appendChild(iframe);
+    }
+
+    return container;
+  }
+
+  addVideoBtn.addEventListener('click', function() {
+    const existing = document.querySelectorAll('.lpe-add-video-placeholder');
+    if (existing.length > 0) {
+      existing.forEach(p => p.remove());
+      addVideoBtn.style.background = '#ef4444';
+      showToast('🎬 動画追加モードOFF');
+      return;
+    }
+
+    addVideoBtn.style.background = '#dc2626';
+    showToast('🎬 「+動画」をクリックして挿入場所を選んでください');
+
+    const containers = document.querySelectorAll('.container, .hero-content');
+    const targets = new Set();
+    containers.forEach(container => {
+      const children = container.children;
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (isEditorEl(child)) continue;
+        if (child.classList.contains('lpe-add-video-placeholder')) continue;
+        if (child.classList.contains('lpe-add-img-placeholder')) continue;
+        if (child.classList.contains('lpe-add-text-placeholder')) continue;
+        if (child.tagName === 'SECTION' || child.classList.contains('container')) continue;
+        targets.add(child);
+      }
+    });
+
+    targets.forEach(target => {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'lpe-add-video-placeholder';
+      placeholder.innerHTML = '＋ ここに動画を追加';
+      placeholder.addEventListener('click', function() {
+        videoInsertTarget = target;
+        videoUrl.value = '';
+        videoPreviewWrap.style.display = 'none';
+        videoPreview.innerHTML = '';
+        videoModal.classList.add('show');
+      });
+      target.parentNode.insertBefore(placeholder, target.nextSibling);
+    });
+  });
+
+  // 動画URLプレビュー
+  videoUrl.addEventListener('input', function() {
+    const info = parseVideoUrl(this.value.trim());
+    if (info) {
+      videoPreview.innerHTML = '';
+      const embed = createVideoEmbed(info);
+      // プレビュー用にスタイル調整
+      embed.style.maxWidth = '100%';
+      embed.style.margin = '0';
+      videoPreview.appendChild(embed.querySelector('iframe, video').cloneNode(true));
+      const child = videoPreview.firstChild;
+      child.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:none;';
+      videoPreviewWrap.style.display = 'block';
+    } else {
+      videoPreviewWrap.style.display = 'none';
+    }
+  });
+
+  videoOk.addEventListener('click', function() {
+    const url = videoUrl.value.trim();
+    if (!url) {
+      showToast('⚠️ 動画URLを入力してください');
+      return;
+    }
+    const info = parseVideoUrl(url);
+    if (!info) {
+      showToast('⚠️ 対応していないURLです');
+      return;
+    }
+
+    if (videoInsertTarget) {
+      const embed = createVideoEmbed(info);
+      videoInsertTarget.parentNode.insertBefore(embed, videoInsertTarget.nextSibling);
+      showToast('✅ 動画を追加しました');
+    }
+
+    document.querySelectorAll('.lpe-add-video-placeholder').forEach(p => p.remove());
+    addVideoBtn.style.background = '#ef4444';
+    videoModal.classList.remove('show');
+    videoInsertTarget = null;
+  });
+
+  videoCancel.addEventListener('click', function() {
+    videoModal.classList.remove('show');
+    videoInsertTarget = null;
+  });
+  videoModal.addEventListener('click', function(e) {
+    if (e.target === videoModal) {
+      videoModal.classList.remove('show');
+      videoInsertTarget = null;
+    }
   });
 
   // === ページ全体ドラッグ&ドロップ ===
