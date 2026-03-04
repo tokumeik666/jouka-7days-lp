@@ -856,6 +856,7 @@
       <button class="lpe-text-type-option" data-type="h3"><span class="lpe-type-label">見出し（小）</span><span class="lpe-type-desc">サブ見出し</span></button>
       <button class="lpe-text-type-option" data-type="quote"><span class="lpe-type-label">引用ボックス</span><span class="lpe-type-desc">巻物風ボックス</span></button>
       <button class="lpe-text-type-option" data-type="big-quote"><span class="lpe-type-label">強調引用</span><span class="lpe-type-desc">大きな文字のキャッチ</span></button>
+      <button class="lpe-text-type-option" data-type="faq"><span class="lpe-type-label">FAQ項目</span><span class="lpe-type-desc">質問＋回答</span></button>
     </div>
     <div class="lpe-toolbar">
       <button class="lpe-btn lpe-addtext" id="lpeAddTextBtn" title="テキストを追加">T+</button>
@@ -925,7 +926,11 @@
     'h1','h2','h3','h4','h5','h6',
     'p','li','td','th','figcaption',
     'blockquote','dt','dd',
-    'span:not(.lpe-sub)', 'label', 'strong', 'em'
+    'span:not(.lpe-sub)', 'label', 'strong', 'em',
+    '.faq-q', '.faq-a',
+    '.big-quote', '.compare-box p', '.compare-box h4',
+    '.price-name', '.price-old', '.price-now',
+    '.soldout-banner p', '.hero-sub', '.hero-vertical'
   ].join(',');
 
   function isEditorEl(el) {
@@ -1315,7 +1320,7 @@
   });
 
   // === ブロック要素に削除ボタンを追加 ===
-  const BLOCK_SELECTOR = 'p, h2, h3, h4, .quote, .big-quote, .bt, .compare-box, .faq-item, .sub-ttl, .sec-ttl, .soldout-banner, .guide-step';
+  const BLOCK_SELECTOR = 'p, h2, h3, h4, .quote, .big-quote, .bt, .compare-box, .faq-item, .sub-ttl, .sec-ttl, .soldout-banner, .guide-step, .lpe-video-container, .img-gallery';
 
   function addBlockDeleteButtons() {
     document.querySelectorAll(BLOCK_SELECTOR).forEach(el => {
@@ -1439,14 +1444,28 @@
           newEl.className = 'big-quote fi visible';
           newEl.innerHTML = '<strong>強調テキストをここに入力...</strong>';
           break;
+        case 'faq':
+          newEl = document.createElement('div');
+          newEl.className = 'faq-item';
+          newEl.innerHTML = '<div class="faq-q">ここに質問を入力...</div><div class="faq-a">ここに回答を入力...</div>';
+          break;
       }
 
       if (newEl) {
         textInsertTarget.parentNode.insertBefore(newEl, textInsertTarget.nextSibling);
         // 編集可能にする
-        newEl.contentEditable = true;
-        newEl.classList.add('lpe-editable');
-        newEl.focus();
+        if (type === 'faq') {
+          // FAQは子要素を個別に編集可能に
+          newEl.querySelectorAll('.faq-q, .faq-a').forEach(child => {
+            child.contentEditable = true;
+            child.classList.add('lpe-editable');
+          });
+          newEl.querySelector('.faq-q').focus();
+        } else {
+          newEl.contentEditable = true;
+          newEl.classList.add('lpe-editable');
+          newEl.focus();
+        }
         // ブロック削除ボタンを追加
         const wrap = document.createElement('div');
         wrap.className = 'lpe-block-wrap';
