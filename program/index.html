@@ -1085,27 +1085,31 @@ function showToast(msg) {
 // ===== API CALLS =====
 async function apiCall(action, data = {}) {
   if (!GAS_URL) {
-    // GAS未設定時はローカルモード
     return localMode(action, data);
   }
 
   try {
-    const isGet = ['status', 'list', 'stats'].includes(action);
+    // GAS Web Appは全てGETで通信（CORS/リダイレクト問題を回避）
+    const params = new URLSearchParams({ action, ...data });
 
-    if (isGet) {
-      const params = new URLSearchParams({ action, ...data });
-      const resp = await fetch(GAS_URL + '?' + params.toString());
-      return await resp.json();
-    } else {
-      const resp = await fetch(GAS_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action, ...data })
-      });
-      return await resp.json();
+    // POST系のアクションもGETのpayloadパラメータで送る
+    if (!['status', 'list', 'stats'].includes(action)) {
+      params.set('payload', JSON.stringify({ action, ...data }));
+    }
+
+    const url = GAS_URL + '?' + params.toString();
+    const resp = await fetch(url, { redirect: 'follow' });
+    const text = await resp.text();
+
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error('JSON parse error:', text.substring(0, 200));
+      return { success: false, error: 'レスポンスの解析に失敗しました' };
     }
   } catch (err) {
     console.error('API Error:', err);
-    return { success: false, error: 'サーバーとの通信に失敗しました' };
+    return { success: false, error: 'サーバーとの通信に失敗しました。\nGASのデプロイ設定を確認してください。' };
   }
 }
 

@@ -130,6 +130,16 @@ function doGet(e) {
     const params = e.parameter || {};
     const action = params.action || '';
 
+    // POST系アクションもGET経由で受け取る（CORS回避）
+    if (params.payload) {
+      try {
+        const body = JSON.parse(params.payload);
+        return handlePostAction(body);
+      } catch (parseErr) {
+        return createErrorResponse('payload のJSON形式が正しくありません。', 'INVALID_JSON');
+      }
+    }
+
     switch (action) {
       case 'status':
         return handleGetStatus(params);
@@ -138,11 +148,26 @@ function doGet(e) {
       case 'stats':
         return handleGetStats();
       default:
-        return createErrorResponse('不明なアクションです。action パラメータを確認してください。', 'INVALID_ACTION');
+        return createErrorResponse('不明なアクションです。', 'INVALID_ACTION');
     }
   } catch (err) {
     Logger.log('doGet エラー: ' + err.message);
     return createErrorResponse('サーバーエラーが発生しました: ' + err.message, 'SERVER_ERROR');
+  }
+}
+
+/**
+ * POST系アクションの共通ハンドラー（doGetとdoPostの両方から呼ばれる）
+ */
+function handlePostAction(body) {
+  const action = body.action || '';
+  switch (action) {
+    case 'register':
+      return handleRegister(body);
+    case 'submit':
+      return handleSubmit(body);
+    default:
+      return createErrorResponse('不明なアクションです。', 'INVALID_ACTION');
   }
 }
 
@@ -165,16 +190,7 @@ function doPost(e) {
       return createErrorResponse('リクエストのJSON形式が正しくありません。', 'INVALID_JSON');
     }
 
-    const action = body.action || '';
-
-    switch (action) {
-      case 'register':
-        return handleRegister(body);
-      case 'submit':
-        return handleSubmit(body);
-      default:
-        return createErrorResponse('不明なアクションです。action フィールドを確認してください。', 'INVALID_ACTION');
-    }
+    return handlePostAction(body);
   } catch (err) {
     Logger.log('doPost エラー: ' + err.message);
     return createErrorResponse('サーバーエラーが発生しました: ' + err.message, 'SERVER_ERROR');
