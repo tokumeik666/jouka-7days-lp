@@ -60,6 +60,7 @@ const COL = {
   // Day7: P(16), Q(17)
   COMPLETED: 18,     // R: 完了フラグ
   COMPLETED_AT: 19,  // S: 完了日時
+  PIN: 20,           // T: 暗証番号（4桁）
 };
 
 // Day N の回答列 = 4 + (N-1)*2, 日時列 = 5 + (N-1)*2
@@ -166,6 +167,8 @@ function handlePostAction(body) {
       return handleRegister(body);
     case 'submit':
       return handleSubmit(body);
+    case 'login':
+      return handleLogin(body);
     default:
       return createErrorResponse('不明なアクションです。', 'INVALID_ACTION');
   }
@@ -221,11 +224,50 @@ function handleGetStatus(params) {
     });
   }
 
+  // 登録済み → PIN認証が必要（データは返さない）
+  return createSuccessResponse({
+    registered: true,
+    needs_pin: true,
+    uid: uid,
+    name: sheet.getRange(row, COL.NAME).getValue() || '',
+  });
+}
+
+
+// ============================================================
+// ハンドラー: login - PIN認証してデータ取得
+// ============================================================
+
+function handleLogin(body) {
+  const uid = body.uid;
+  const pin = body.pin || '';
+
+  if (!uid) {
+    return createErrorResponse('uid フィールドが必要です。', 'MISSING_UID');
+  }
+  if (!pin || !/^\d{4}$/.test(pin)) {
+    return createErrorResponse('4桁の暗証番号を入力してください。', 'INVALID_PIN');
+  }
+
+  const sheet = getSheet();
+  const row = findRowByUid(sheet, uid);
+
+  if (!row) {
+    return createErrorResponse('このUIDは未登録です。', 'NOT_REGISTERED');
+  }
+
+  // PIN照合
+  const storedPin = String(sheet.getRange(row, COL.PIN).getValue());
+  if (storedPin !== pin) {
+    return createErrorResponse('暗証番号が違います。', 'WRONG_PIN');
+  }
+
   const data = sheet.getRange(row, 1, 1, COL.COMPLETED_AT).getValues()[0];
   const progress = buildProgressObject(data);
 
   return createSuccessResponse({
     registered: true,
+    pin_verified: true,
     uid: uid,
     name: data[COL.NAME - 1] || '',
     registered_at: formatDate(data[COL.REGISTERED_AT - 1]),
@@ -348,27 +390,25 @@ function handleGetStats() {
 function handleRegister(body) {
   const uid = body.uid;
   const name = body.name || '';
+  const pin = body.pin || '';
 
   if (!uid) {
     return createErrorResponse('uid フィールドが必要です。', 'MISSING_UID');
+  }
+  if (!pin || !/^\d{4}$/.test(pin)) {
+    return createErrorResponse('4桁の暗証番号を設定してください。', 'INVALID_PIN');
   }
 
   const sheet = getSheet();
   const existingRow = findRowByUid(sheet, uid);
 
   if (existingRow) {
-    // 既に登録済み: エラーではなく既存データを返す
-    const data = sheet.getRange(existingRow, 1, 1, COL.COMPLETED_AT).getValues()[0];
-    const progress = buildProgressObject(data);
-
+    // 既に登録済み → PIN認証が必要
     return createSuccessResponse({
-      message: 'すでに登録済みです。',
+      message: 'すでに登録済みです。暗証番号を入力してください。',
       is_new: false,
+      needs_pin: true,
       uid: uid,
-      name: data[COL.NAME - 1] || '',
-      registered_at: formatDate(data[COL.REGISTERED_AT - 1]),
-      current_day: progress.current_day,
-      progress: progress,
     });
   }
 
@@ -383,6 +423,7 @@ function handleRegister(body) {
   }
   newRow.push(false); // R: completed = FALSE
   newRow.push('');    // S: completed_at
+  newRow.push(pin);   // T: PIN
 
   sheet.appendRow(newRow);
 
@@ -425,6 +466,16 @@ function handleSubmit(body) {
 
   if (!row) {
     return createErrorResponse('このUIDは未登録です。先に登録を行ってください。', 'NOT_REGISTERED');
+  }
+
+  // PIN照合
+  const pin = body.pin || '';
+  if (!pin) {
+    return createErrorResponse('暗証番号が必要です。', 'MISSING_PIN');
+  }
+  const storedPin = String(sheet.getRange(row, COL.PIN).getValue());
+  if (storedPin !== pin) {
+    return createErrorResponse('暗証番号が違います。', 'WRONG_PIN');
   }
 
   // 既に完了済みチェック
@@ -636,6 +687,7 @@ function writeHeaders(sheet) {
     'day7_at',       // Q
     'completed',     // R
     'completed_at',  // S
+    'pin',           // T
   ];
 
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -656,6 +708,7 @@ function writeHeaders(sheet) {
   }
   sheet.setColumnWidth(COL.COMPLETED, 80);
   sheet.setColumnWidth(COL.COMPLETED_AT, 160);
+  sheet.setColumnWidth(COL.PIN, 80);
 
   // 1行目を固定
   sheet.setFrozenRows(1);
@@ -810,6 +863,7 @@ function testRegister() {
         action: 'register',
         uid: 'test-uid-001',
         name: 'テスト太郎',
+        pin: '1234',
       }),
     },
   };
