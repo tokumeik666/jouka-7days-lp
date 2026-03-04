@@ -918,7 +918,7 @@ body::after {
   <div class="loading-text">浄化の空間を準備しています...</div>
 </div>
 
-<!-- ===== Welcome Screen ===== -->
+<!-- ===== Welcome / Login Screen ===== -->
 <div class="screen" id="screen-welcome">
   <div class="container">
     <div class="welcome-moon fade-in">
@@ -928,38 +928,17 @@ body::after {
     </div>
     <div class="welcome-vertical fade-in d1">禊 — 浄化</div>
     <h1 class="welcome-title fade-in d2">浄化プログラム<br>—7days</h1>
-    <p class="welcome-sub fade-in d3">心の器を空にする、7日間の旅が始まります。<br>ここは、あなただけの安全な場所です。</p>
+    <p class="welcome-sub fade-in d3">心の器を空にする、7日間の旅。<br>お名前と暗証番号を入力してください。<br><span style="font-size:0.72rem;opacity:0.5;">初めての方は自動的に登録されます</span></p>
     <div class="name-input-wrap fade-in d4">
-      <div class="name-label">お名前をお聞かせください</div>
+      <div class="name-label">お名前</div>
       <input type="text" class="name-input" id="nameInput" placeholder="お名前" autocomplete="off">
     </div>
     <div class="pin-set-wrap fade-in d4">
-      <div class="pin-label">4桁の暗証番号を設定してください</div>
+      <div class="pin-label">暗証番号（4桁）</div>
       <input type="tel" class="pin-set-input" id="pinSetInput" placeholder="4桁の数字" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
     </div>
+    <div class="pin-error-msg" id="authErrorMsg" style="text-align:center;"></div>
     <button class="btn-primary fade-in d5" id="btnEnter">扉を開く</button>
-  </div>
-</div>
-
-<!-- ===== PIN Login Screen ===== -->
-<div class="screen" id="screen-pin">
-  <div class="container">
-    <div class="welcome-moon fade-in">
-      <div class="moon"></div>
-      <div class="moon-shadow"></div>
-      <div class="moon-glow"></div>
-    </div>
-    <div class="welcome-vertical fade-in d1">禊 — 浄化</div>
-    <h2 class="welcome-title fade-in d2" id="pinGreetingName">おかえりなさい</h2>
-    <p class="welcome-sub fade-in d2">暗証番号を入力して<br>浄化の旅を続けましょう</p>
-    <div class="pin-input-wrap fade-in d3">
-      <div class="pin-dots" id="pinDots">
-        <span></span><span></span><span></span><span></span>
-      </div>
-      <input type="tel" class="pin-input" id="pinInput" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off" placeholder="----">
-    </div>
-    <div class="pin-error-msg" id="pinErrorMsg">暗証番号が違います</div>
-    <button class="btn-primary fade-in d4" id="btnPinLogin">開く</button>
   </div>
 </div>
 
@@ -1132,32 +1111,27 @@ document.addEventListener('DOMContentLoaded', () => {
   if (params.get('reset')) {
     localStorage.removeItem('jouka_uid');
     localStorage.removeItem('jouka_pin');
-    // ローカルモードのデータもクリア
+    localStorage.removeItem('jouka_name');
     Object.keys(localStorage).filter(k => k.startsWith('jouka_local_')).forEach(k => localStorage.removeItem(k));
     window.location.href = window.location.pathname;
     return;
   }
 
-  // URLパラメータからUID取得
+  // URLパラメータからUID取得（エルメ用）
   state.uid = params.get('uid') || params.get('id') || null;
 
-  if (!state.uid) {
-    // UIDなし → ローカルストレージチェック
-    const saved = localStorage.getItem('jouka_uid');
-    if (saved) {
-      state.uid = saved;
-    }
-  }
-
-  // PINをローカルストレージから復元
+  // ローカルストレージから復元
+  if (!state.uid) state.uid = localStorage.getItem('jouka_uid') || null;
   state.pin = localStorage.getItem('jouka_pin') || null;
+  state.name = localStorage.getItem('jouka_name') || '';
 
-  if (state.uid) {
-    localStorage.setItem('jouka_uid', state.uid);
-    loadProgress();
+  // 保存済み情報があれば自動ログイン試行
+  if (state.uid && state.pin) {
+    autoLogin();
   } else {
-    // UID無しでも名前入力で開始可能（デモ/テスト用）
+    // ログイン画面を表示
     hideLoading();
+    if (state.name) $('nameInput').value = state.name;
     showScreen('screen-welcome');
   }
 
@@ -1165,14 +1139,11 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btnEnter').addEventListener('click', handleEnter);
   $('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('pinSetInput').focus(); });
   $('pinSetInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleEnter(); });
-  $('btnPinLogin').addEventListener('click', handlePinLogin);
-  $('pinInput').addEventListener('input', handlePinInputChange);
-  $('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') handlePinLogin(); });
   $('btnStartDay').addEventListener('click', handleStartDay);
   $('btnSubmit').addEventListener('click', handleSubmit);
   $('btnBackDash').addEventListener('click', () => showScreen('screen-dashboard', true));
   $('btnBackToDash').addEventListener('click', () => {
-    loadProgress();
+    reloadDashboard();
   });
 });
 
@@ -1257,6 +1228,37 @@ function localMode(action, data) {
   let local = JSON.parse(localStorage.getItem(key) || 'null');
 
   switch (action) {
+    case 'auth': {
+      // ローカルモード: 名前+PINで検索 or 新規登録
+      const allKeys = Object.keys(localStorage).filter(k => k.startsWith('jouka_local_'));
+      for (const k of allKeys) {
+        const u = JSON.parse(localStorage.getItem(k) || 'null');
+        if (u && u.name === data.name) {
+          if (u.pin !== data.pin) return { success: false, error: '暗証番号が違います。', code: 'WRONG_PIN' };
+          recalcLocalTimeLocks(u);
+          localStorage.setItem(k, JSON.stringify(u));
+          return { success: true, pin_verified: true, registered: true, is_new: false, uid: u.uid, name: u.name, progress: u.progress, current_day: u.progress.current_day };
+        }
+      }
+      // 新規登録
+      const newUid = data.uid || ('JK' + Date.now().toString(36).toUpperCase());
+      const newKey = 'jouka_local_' + newUid;
+      local = {
+        uid: newUid,
+        name: data.name,
+        pin: data.pin || '0000',
+        progress: { days: {}, days_completed: 0, current_day: 1 }
+      };
+      for (let d = 1; d <= 7; d++) {
+        local.progress.days['day' + d] = {
+          is_completed: false, is_unlocked: d === 1,
+          is_time_locked: false, unlock_at: null, answered_at: null
+        };
+      }
+      localStorage.setItem(newKey, JSON.stringify(local));
+      return { success: true, pin_verified: true, registered: true, is_new: true, uid: newUid, name: data.name, current_day: 1, progress: local.progress };
+    }
+
     case 'register':
       local = {
         uid: data.uid || 'demo',
@@ -1347,115 +1349,57 @@ function recalcLocalTimeLocks(local) {
   local.progress.current_day = currentDay;
 }
 
-// ===== LOAD PROGRESS =====
-async function loadProgress() {
-  const result = await apiCall('status', { uid: state.uid });
+// ===== AUTO LOGIN（保存済みUID+PINで自動ログイン）=====
+async function autoLogin() {
+  const result = await apiCall('login', { uid: state.uid, pin: state.pin });
 
-  if (!result.success && result.error) {
+  if (result.success && result.pin_verified) {
+    state.name = result.name || '';
+    state.uid = result.uid || state.uid;
+    parseProgress(result.progress);
+    saveSession();
     hideLoading();
-    $('errorText').textContent = result.error;
-    showScreen('screen-error', true);
+    renderDashboard();
+    showScreen('screen-dashboard', true);
     return;
   }
 
-  if (result.registered === false) {
-    // 未登録 → Welcome画面
-    hideLoading();
+  // 自動ログイン失敗 → 保存データクリア、ログイン画面へ
+  clearSession();
+  hideLoading();
+  showScreen('screen-welcome', true);
+}
+
+// ===== RELOAD DASHBOARD（ダッシュボード再読み込み）=====
+async function reloadDashboard() {
+  if (!state.uid || !state.pin) {
     showScreen('screen-welcome', true);
     return;
   }
 
-  // 登録済み → PIN認証が必要
-  if (result.needs_pin) {
+  const result = await apiCall('login', { uid: state.uid, pin: state.pin });
+
+  if (result.success && result.pin_verified) {
     state.name = result.name || '';
-
-    // ローカルにPINがあれば自動ログイン試行
-    if (state.pin) {
-      const loginResult = await apiCall('login', { uid: state.uid, pin: state.pin });
-      if (loginResult.success && loginResult.pin_verified) {
-        state.name = loginResult.name || '';
-        parseProgress(loginResult.progress);
-        hideLoading();
-        renderDashboard();
-        showScreen('screen-dashboard', true);
-        return;
-      }
-      // PIN不一致 → 保存PINクリア、手動入力へ
-      state.pin = null;
-      localStorage.removeItem('jouka_pin');
-    }
-
-    // PIN入力画面を表示
-    hideLoading();
-    $('pinGreetingName').textContent = (state.name ? state.name + ' 様' : 'おかえりなさい');
-    $('pinInput').value = '';
-    updatePinDots();
-    $('pinErrorMsg').classList.remove('show');
-    showScreen('screen-pin', true);
-    setTimeout(() => $('pinInput').focus(), 600);
-    return;
+    parseProgress(result.progress);
+    renderDashboard();
+    showScreen('screen-dashboard', true);
   }
-
-  // PIN不要でデータが返ってきた場合（後方互換）
-  state.name = result.name || '';
-  parseProgress(result.progress);
-
-  hideLoading();
-  renderDashboard();
-  showScreen('screen-dashboard', true);
 }
 
-// ===== PIN INPUT VISUAL =====
-function updatePinDots() {
-  const val = $('pinInput').value;
-  const dots = $('pinDots').querySelectorAll('span');
-  dots.forEach((dot, i) => {
-    dot.classList.toggle('filled', i < val.length);
-  });
+// ===== SESSION HELPERS =====
+function saveSession() {
+  localStorage.setItem('jouka_uid', state.uid);
+  localStorage.setItem('jouka_pin', state.pin);
+  localStorage.setItem('jouka_name', state.name);
 }
 
-function handlePinInputChange() {
-  // 数字以外を除去
-  $('pinInput').value = $('pinInput').value.replace(/[^0-9]/g, '');
-  updatePinDots();
-  $('pinErrorMsg').classList.remove('show');
-}
-
-// ===== PIN LOGIN =====
-async function handlePinLogin() {
-  const pin = $('pinInput').value.trim();
-  if (pin.length !== 4) {
-    showToast('4桁の暗証番号を入力してください');
-    return;
-  }
-
-  $('btnPinLogin').disabled = true;
-  $('btnPinLogin').textContent = '...';
-
-  const result = await apiCall('login', { uid: state.uid, pin: pin });
-
-  if (!result.success || !result.pin_verified) {
-    $('pinErrorMsg').textContent = result.error || '暗証番号が違います';
-    $('pinErrorMsg').classList.add('show');
-    $('pinInput').value = '';
-    updatePinDots();
-    $('btnPinLogin').disabled = false;
-    $('btnPinLogin').textContent = '開く';
-    setTimeout(() => $('pinInput').focus(), 100);
-    return;
-  }
-
-  // 認証成功 → PINを保存
-  state.pin = pin;
-  localStorage.setItem('jouka_pin', pin);
-  state.name = result.name || '';
-  parseProgress(result.progress);
-
-  $('btnPinLogin').disabled = false;
-  $('btnPinLogin').textContent = '開く';
-
-  renderDashboard();
-  showScreen('screen-dashboard', true);
+function clearSession() {
+  state.uid = null;
+  state.pin = null;
+  localStorage.removeItem('jouka_uid');
+  localStorage.removeItem('jouka_pin');
+  localStorage.removeItem('jouka_name');
 }
 
 // ===== PARSE PROGRESS from GAS =====
@@ -1491,7 +1435,7 @@ function parseProgress(progressData) {
   }
 }
 
-// ===== HANDLE ENTER =====
+// ===== HANDLE ENTER（名前+PINで認証/登録）=====
 async function handleEnter() {
   const name = $('nameInput').value.trim();
   if (!name) {
@@ -1501,58 +1445,49 @@ async function handleEnter() {
 
   const pin = $('pinSetInput').value.trim();
   if (!pin || !/^\d{4}$/.test(pin)) {
-    showToast('4桁の暗証番号を設定してください');
+    showToast('4桁の暗証番号を入力してください');
     $('pinSetInput').focus();
     return;
   }
 
+  // エラー表示をクリア
+  $('authErrorMsg').classList.remove('show');
+
   $('btnEnter').disabled = true;
   $('btnEnter').textContent = '...';
 
-  // UIDがなければ自動生成
-  if (!state.uid) {
-    state.uid = 'JK' + Date.now().toString(36).toUpperCase();
-    localStorage.setItem('jouka_uid', state.uid);
-  }
+  // URLからのUIDがあれば渡す（エルメ連携用）
+  const urlParams = new URLSearchParams(window.location.search);
+  const uidFromUrl = urlParams.get('uid') || urlParams.get('id') || '';
 
-  state.name = name;
-  state.pin = pin;
+  // auth API: 名前+PINでログインor自動登録
+  const result = await apiCall('auth', { name: name, pin: pin, uid: uidFromUrl });
 
-  const result = await apiCall('register', { uid: state.uid, name: name, pin: pin });
+  $('btnEnter').disabled = false;
+  $('btnEnter').textContent = '扉を開く';
 
   if (!result.success) {
-    // 既存ユーザーでPIN認証が必要な場合
-    if (result.needs_pin) {
-      state.name = name;
-      $('btnEnter').disabled = false;
-      $('btnEnter').textContent = '扉を開く';
-      // PIN認証画面へ遷移
-      $('pinGreetingName').textContent = name + ' 様';
-      $('pinInput').value = '';
-      updatePinDots();
-      $('pinErrorMsg').classList.remove('show');
-      showScreen('screen-pin', true);
-      setTimeout(() => $('pinInput').focus(), 600);
-      return;
-    }
-    showToast(result.error || '登録に失敗しました');
-    $('btnEnter').disabled = false;
-    $('btnEnter').textContent = '扉を開く';
+    // PINが違う場合
+    $('authErrorMsg').textContent = result.error || 'ログインに失敗しました';
+    $('authErrorMsg').classList.add('show');
+    $('pinSetInput').value = '';
+    $('pinSetInput').focus();
     return;
   }
 
-  // PINをローカルに保存
-  localStorage.setItem('jouka_pin', pin);
+  // 認証成功
+  state.uid = result.uid;
+  state.pin = pin;
+  state.name = result.name || name;
+  saveSession();
 
-  // 既存ユーザーの場合は進捗を読み込み
+  // 進捗を読み込み
   if (result.progress) {
     parseProgress(result.progress);
   } else {
     state.progress = [false,false,false,false,false,false,false];
     state.currentDay = result.current_day || 1;
   }
-
-  state.name = result.name || name;
 
   renderDashboard();
   showScreen('screen-dashboard', true);

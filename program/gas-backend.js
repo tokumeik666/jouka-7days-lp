@@ -169,6 +169,8 @@ function handlePostAction(body) {
       return handleSubmit(body);
     case 'login':
       return handleLogin(body);
+    case 'auth':
+      return handleAuth(body);
     default:
       return createErrorResponse('不明なアクションです。', 'INVALID_ACTION');
   }
@@ -275,6 +277,98 @@ function handleLogin(body) {
     current_day: progress.current_day,
     completed: data[COL.COMPLETED - 1] === true || data[COL.COMPLETED - 1] === 'TRUE',
     completed_at: formatDate(data[COL.COMPLETED_AT - 1]),
+    questions: DAILY_QUESTIONS,
+  });
+}
+
+
+// ============================================================
+// ハンドラー: auth - 名前+PINで認証（ログインor自動登録）
+// ============================================================
+
+function handleAuth(body) {
+  const name = (body.name || '').trim();
+  const pin = body.pin || '';
+  const uidFromUrl = body.uid || '';  // エルメURLのUIDがあれば使う
+
+  if (!name) {
+    return createErrorResponse('お名前を入力してください。', 'MISSING_NAME');
+  }
+  if (!pin || !/^\d{4}$/.test(pin)) {
+    return createErrorResponse('4桁の暗証番号を入力してください。', 'INVALID_PIN');
+  }
+
+  const sheet = getSheet();
+  const lastRow = sheet.getLastRow();
+
+  // 既存ユーザーを名前で検索
+  if (lastRow > 1) {
+    var dataRange = sheet.getRange(2, 1, lastRow - 1, COL.PIN).getValues();
+    var matchedRow = null;
+    var nameFound = false;
+
+    for (var i = 0; i < dataRange.length; i++) {
+      var rowName = String(dataRange[i][COL.NAME - 1]).trim();
+      if (rowName === name) {
+        nameFound = true;
+        var rowPin = String(dataRange[i][COL.PIN - 1]);
+        if (rowPin === pin) {
+          matchedRow = i + 2;  // 行番号（1-indexed, ヘッダー分+1）
+          break;
+        }
+      }
+    }
+
+    if (matchedRow) {
+      // ログイン成功
+      var rowData = sheet.getRange(matchedRow, 1, 1, COL.COMPLETED_AT).getValues()[0];
+      var progress = buildProgressObject(rowData);
+      return createSuccessResponse({
+        registered: true,
+        pin_verified: true,
+        is_new: false,
+        uid: rowData[COL.UID - 1],
+        name: name,
+        registered_at: formatDate(rowData[COL.REGISTERED_AT - 1]),
+        progress: progress,
+        current_day: progress.current_day,
+        completed: rowData[COL.COMPLETED - 1] === true || rowData[COL.COMPLETED - 1] === 'TRUE',
+        completed_at: formatDate(rowData[COL.COMPLETED_AT - 1]),
+        questions: DAILY_QUESTIONS,
+      });
+    }
+
+    if (nameFound) {
+      // 名前は見つかったがPINが違う
+      return createErrorResponse('暗証番号が違います。', 'WRONG_PIN');
+    }
+  }
+
+  // 名前が見つからない → 新規登録
+  var uid = uidFromUrl || ('JK' + new Date().getTime().toString(36).toUpperCase());
+  var now = new Date();
+  var nowStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+  var newRow = [uid, name, nowStr];
+
+  for (var j = 0; j < 14; j++) {
+    newRow.push('');
+  }
+  newRow.push(false);  // completed
+  newRow.push('');     // completed_at
+  newRow.push(pin);    // pin
+
+  sheet.appendRow(newRow);
+  Logger.log('auth新規登録: ' + uid + ' (' + name + ')');
+
+  return createSuccessResponse({
+    registered: true,
+    pin_verified: true,
+    is_new: true,
+    uid: uid,
+    name: name,
+    registered_at: nowStr,
+    current_day: 1,
+    question: DAILY_QUESTIONS[0],
     questions: DAILY_QUESTIONS,
   });
 }
