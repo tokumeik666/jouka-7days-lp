@@ -408,6 +408,122 @@
       background: rgba(22, 163, 106, 0.9);
     }
 
+    /* テキスト追加ボタン */
+    .lpe-btn.lpe-addtext {
+      background: #f59e0b;
+      color: #fff;
+      display: none;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    /* テキスト種類セレクタ */
+    .lpe-text-type-selector {
+      position: fixed;
+      background: #1a1a2e;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 8px;
+      z-index: 100001;
+      display: none;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+      min-width: 160px;
+    }
+    .lpe-text-type-selector.show { display: block; }
+    .lpe-text-type-option {
+      display: block;
+      width: 100%;
+      padding: 8px 14px;
+      background: none;
+      border: none;
+      color: #e0e0e0;
+      cursor: pointer;
+      text-align: left;
+      border-radius: 6px;
+      transition: background 0.15s;
+      font-size: 13px;
+    }
+    .lpe-text-type-option:hover {
+      background: rgba(245, 158, 11, 0.15);
+    }
+    .lpe-text-type-option .lpe-type-label {
+      font-weight: 600;
+    }
+    .lpe-text-type-option .lpe-type-desc {
+      font-size: 11px;
+      color: #888;
+      margin-left: 8px;
+    }
+
+    /* テキスト追加プレースホルダー */
+    body.lpe-editing .lpe-add-text-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+      margin: 8px 0;
+      border: 2px dashed rgba(245, 158, 11, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: rgba(245, 158, 11, 0.6);
+      font-size: 13px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    }
+    body.lpe-editing .lpe-add-text-placeholder:hover {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.05);
+      color: #f59e0b;
+    }
+
+    /* ブロック削除ボタン */
+    body.lpe-editing .lpe-block-del {
+      position: absolute;
+      top: -8px; right: -8px;
+      width: 22px; height: 22px;
+      background: #dc2626;
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.7);
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 11px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      line-height: 1;
+      padding: 0;
+      font-family: -apple-system, sans-serif;
+      transition: transform 0.15s;
+    }
+    body.lpe-editing .lpe-block-wrap:hover .lpe-block-del {
+      display: flex;
+    }
+    body.lpe-editing .lpe-block-del:hover {
+      background: #ef4444;
+      transform: scale(1.2);
+    }
+    body.lpe-editing .lpe-block-wrap {
+      position: relative;
+    }
+
+    /* 空ブロック可視化 */
+    body.lpe-editing .lpe-empty-block {
+      outline: 2px dashed rgba(220, 38, 38, 0.4) !important;
+      outline-offset: 2px !important;
+      min-height: 30px;
+    }
+    body.lpe-editing .lpe-empty-block::after {
+      content: '空のブロック — 🗑で削除';
+      display: block;
+      text-align: center;
+      color: rgba(220, 38, 38, 0.5);
+      font-size: 11px;
+      padding: 6px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', sans-serif;
+    }
+
     /* 画像追加プレースホルダー */
     body.lpe-editing .lpe-add-img-placeholder {
       display: flex;
@@ -672,7 +788,15 @@
         <button id="lpeSizeApply">適用</button>
       </div>
     </div>
+    <div class="lpe-text-type-selector" id="lpeTextTypeSelector">
+      <button class="lpe-text-type-option" data-type="p"><span class="lpe-type-label">段落</span><span class="lpe-type-desc">本文テキスト</span></button>
+      <button class="lpe-text-type-option" data-type="h2"><span class="lpe-type-label">見出し（大）</span><span class="lpe-type-desc">セクション見出し</span></button>
+      <button class="lpe-text-type-option" data-type="h3"><span class="lpe-type-label">見出し（小）</span><span class="lpe-type-desc">サブ見出し</span></button>
+      <button class="lpe-text-type-option" data-type="quote"><span class="lpe-type-label">引用ボックス</span><span class="lpe-type-desc">巻物風ボックス</span></button>
+      <button class="lpe-text-type-option" data-type="big-quote"><span class="lpe-type-label">強調引用</span><span class="lpe-type-desc">大きな文字のキャッチ</span></button>
+    </div>
     <div class="lpe-toolbar">
+      <button class="lpe-btn lpe-addtext" id="lpeAddTextBtn" title="テキストを追加">T+</button>
       <button class="lpe-btn lpe-fontsize" id="lpeFontSizeBtn" title="文字サイズ変更">Aa</button>
       <button class="lpe-btn lpe-addimg" id="lpeAddImgBtn" title="画像を追加">🖼</button>
       <button class="lpe-btn lpe-color" id="lpeColorBtn" title="文字色を変更">🎨</button>
@@ -694,6 +818,8 @@
   const customColor = document.getElementById('lpeCustomColor');
   const colorReset = document.getElementById('lpeColorReset');
   const addImgBtn = document.getElementById('lpeAddImgBtn');
+  const addTextBtn = document.getElementById('lpeAddTextBtn');
+  const textTypeSelector = document.getElementById('lpeTextTypeSelector');
   const fontSizeBtn = document.getElementById('lpeFontSizeBtn');
   const sizePalette = document.getElementById('lpeSizePalette');
   const sizeCustomInput = document.getElementById('lpeSizeCustom');
@@ -764,6 +890,7 @@
     publishBtn.style.display = 'flex';
     colorBtn.style.display = 'flex';
     fontSizeBtn.style.display = 'flex';
+    addTextBtn.style.display = 'flex';
     addImgBtn.style.display = 'flex';
     linkBtn.style.display = 'flex';
     notice.style.display = 'block';
@@ -775,6 +902,10 @@
       el.contentEditable = true;
       el.classList.add('lpe-editable');
     });
+
+    // ブロック要素に削除ボタンを追加 + 空ブロック検出
+    addBlockDeleteButtons();
+    detectEmptyBlocks();
 
     // 画像をラップ
     document.querySelectorAll('img').forEach(img => {
@@ -894,9 +1025,11 @@
     publishBtn.style.display = 'none';
     colorBtn.style.display = 'none';
     fontSizeBtn.style.display = 'none';
+    addTextBtn.style.display = 'none';
     addImgBtn.style.display = 'none';
     colorPalette.classList.remove('show');
     sizePalette.classList.remove('show');
+    textTypeSelector.classList.remove('show');
     linkBtn.style.display = 'none';
     notice.style.display = 'none';
     linkEditing = false;
@@ -916,8 +1049,21 @@
       wrap.remove();
     });
 
-    // 画像追加プレースホルダーを削除
+    // ブロック削除ボタンを解除
+    document.querySelectorAll('.lpe-block-wrap').forEach(wrap => {
+      const child = wrap.firstElementChild;
+      if (child && !child.classList.contains('lpe-block-del')) {
+        wrap.parentNode.insertBefore(child, wrap);
+      }
+      wrap.remove();
+    });
+
+    // 空ブロック表示をリセット
+    document.querySelectorAll('.lpe-empty-block').forEach(el => el.classList.remove('lpe-empty-block'));
+
+    // プレースホルダーを削除
     document.querySelectorAll('.lpe-add-img-placeholder').forEach(p => p.remove());
+    document.querySelectorAll('.lpe-add-text-placeholder').forEach(p => p.remove());
 
     document.querySelectorAll('a').forEach(a => {
       a.removeEventListener('click', preventNav, true);
@@ -1092,6 +1238,175 @@
       if (anchor && !isEditorEl(anchor.parentElement || anchor)) {
         savedSelection = sel.getRangeAt(0).cloneRange();
       }
+    }
+  });
+
+  // === ブロック要素に削除ボタンを追加 ===
+  const BLOCK_SELECTOR = 'p, h2, h3, h4, .quote, .big-quote, .bt, .compare-box, .faq-item, .sub-ttl, .sec-ttl, .soldout-banner, .guide-step';
+
+  function addBlockDeleteButtons() {
+    document.querySelectorAll(BLOCK_SELECTOR).forEach(el => {
+      if (isEditorEl(el)) return;
+      if (el.closest('.lpe-block-wrap')) return;
+      if (el.closest('.lpe-img-wrap')) return;
+      if (el.closest('#lp-editor-root')) return;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'lpe-block-wrap';
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'lpe-block-del';
+      delBtn.textContent = '✕';
+      delBtn.title = 'このブロックを削除';
+      delBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        wrap.remove();
+        showToast('🗑 ブロックを削除しました');
+      });
+
+      el.parentNode.insertBefore(wrap, el);
+      wrap.appendChild(el);
+      wrap.appendChild(delBtn);
+    });
+  }
+
+  // === 空ブロック検出 ===
+  function detectEmptyBlocks() {
+    document.querySelectorAll('p, h2, h3, h4, div.quote, div.big-quote, div.bt').forEach(el => {
+      if (isEditorEl(el)) return;
+      const text = el.textContent.trim();
+      const hasImg = el.querySelector('img');
+      if (!text && !hasImg) {
+        el.classList.add('lpe-empty-block');
+      }
+    });
+  }
+
+  // === テキスト追加モード ===
+  let textAddMode = false;
+  let textInsertTarget = null;
+
+  addTextBtn.addEventListener('click', function() {
+    // プレースホルダーを表示/非表示
+    const existing = document.querySelectorAll('.lpe-add-text-placeholder');
+    if (existing.length > 0) {
+      existing.forEach(p => p.remove());
+      addTextBtn.style.background = '#f59e0b';
+      textAddMode = false;
+      showToast('T+ テキスト追加モードOFF');
+      return;
+    }
+
+    textAddMode = true;
+    addTextBtn.style.background = '#dc2626';
+    showToast('T+ 「+テキスト」をクリックして挿入場所を選んでください');
+
+    const containers = document.querySelectorAll('.container, .hero-content');
+    const targets = new Set();
+    containers.forEach(container => {
+      const children = container.children;
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (isEditorEl(child)) continue;
+        if (child.classList.contains('lpe-add-text-placeholder')) continue;
+        if (child.classList.contains('lpe-add-img-placeholder')) continue;
+        if (child.tagName === 'SECTION' || child.classList.contains('container')) continue;
+        targets.add(child);
+      }
+    });
+
+    targets.forEach(target => {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'lpe-add-text-placeholder';
+      placeholder.innerHTML = '＋ ここにテキストを追加';
+      placeholder.addEventListener('click', function(e) {
+        textInsertTarget = target;
+        // セレクタをクリック位置の近くに表示
+        const rect = placeholder.getBoundingClientRect();
+        textTypeSelector.style.left = Math.min(rect.left, window.innerWidth - 200) + 'px';
+        textTypeSelector.style.top = (rect.top - 10) + 'px';
+        textTypeSelector.style.bottom = 'auto';
+        textTypeSelector.classList.add('show');
+      });
+      target.parentNode.insertBefore(placeholder, target.nextSibling);
+    });
+  });
+
+  // テキストタイプ選択
+  textTypeSelector.querySelectorAll('.lpe-text-type-option').forEach(opt => {
+    opt.addEventListener('click', function() {
+      if (!textInsertTarget) return;
+      const type = this.dataset.type;
+      let newEl;
+
+      switch(type) {
+        case 'p':
+          newEl = document.createElement('p');
+          newEl.className = 'bt fi visible';
+          newEl.innerHTML = 'ここにテキストを入力...';
+          break;
+        case 'h2':
+          newEl = document.createElement('h2');
+          newEl.className = 'sec-ttl fi visible';
+          newEl.innerHTML = '見出しテキスト';
+          break;
+        case 'h3':
+          newEl = document.createElement('h3');
+          newEl.className = 'sub-ttl fi visible';
+          newEl.innerHTML = 'サブ見出しテキスト';
+          break;
+        case 'quote':
+          newEl = document.createElement('div');
+          newEl.className = 'quote fi visible';
+          newEl.innerHTML = '<p>引用テキストをここに入力...</p>';
+          break;
+        case 'big-quote':
+          newEl = document.createElement('div');
+          newEl.className = 'big-quote fi visible';
+          newEl.innerHTML = '<strong>強調テキストをここに入力...</strong>';
+          break;
+      }
+
+      if (newEl) {
+        textInsertTarget.parentNode.insertBefore(newEl, textInsertTarget.nextSibling);
+        // 編集可能にする
+        newEl.contentEditable = true;
+        newEl.classList.add('lpe-editable');
+        newEl.focus();
+        // ブロック削除ボタンを追加
+        const wrap = document.createElement('div');
+        wrap.className = 'lpe-block-wrap';
+        const delBtn = document.createElement('button');
+        delBtn.className = 'lpe-block-del';
+        delBtn.textContent = '✕';
+        delBtn.title = 'このブロックを削除';
+        delBtn.addEventListener('click', function(ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          wrap.remove();
+          showToast('🗑 ブロックを削除しました');
+        });
+        newEl.parentNode.insertBefore(wrap, newEl);
+        wrap.appendChild(newEl);
+        wrap.appendChild(delBtn);
+
+        showToast('✅ テキストブロックを追加しました');
+      }
+
+      // プレースホルダーを全削除
+      document.querySelectorAll('.lpe-add-text-placeholder').forEach(p => p.remove());
+      textTypeSelector.classList.remove('show');
+      addTextBtn.style.background = '#f59e0b';
+      textAddMode = false;
+      textInsertTarget = null;
+    });
+  });
+
+  // セレクタ外クリックで閉じる
+  document.addEventListener('mousedown', function(e) {
+    if (!e.target.closest('.lpe-text-type-selector') && !e.target.closest('.lpe-add-text-placeholder')) {
+      textTypeSelector.classList.remove('show');
     }
   });
 
