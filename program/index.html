@@ -1006,8 +1006,15 @@ const $ = id => document.getElementById(id);
 document.addEventListener('DOMContentLoaded', () => {
   initWaterParticles();
 
-  // URLパラメータからUID取得
+  // リセット処理
   const params = new URLSearchParams(window.location.search);
+  if (params.get('reset')) {
+    localStorage.clear();
+    window.location.href = window.location.pathname;
+    return;
+  }
+
+  // URLパラメータからUID取得
   state.uid = params.get('uid') || params.get('id') || null;
 
   if (!state.uid) {
