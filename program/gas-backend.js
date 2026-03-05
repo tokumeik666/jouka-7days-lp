@@ -1,9 +1,14 @@
 // ============================================================
 // 浄化プログラム 7days - API Backend (Google Apps Script)
 //
-// 2シート構成:
+// シート構成:
 //   シート1 = 登録データ（エルメフォームから入力される）
-//   シート2 = プログラム進捗（回答データ・自動作成）
+//   day1〜day7 = 各日の回答データ（自動作成）
+//
+// 各dayシートのレイアウト:
+//   A列 = タイムスタンプ（その日の最後のサブ質問に回答した時刻）
+//   B列 = お名前
+//   C列〜 = 質問①, 質問②, ... （サブ質問ごとに1列）
 //
 // エルメフォームの設定:
 //   フォーム項目に「お名前」「暗証番号（4桁）」を追加
@@ -15,11 +20,6 @@
 //   2. このコードを貼り付け
 //   3. REG.NAME_COL / REG.PIN_COL をシート1の列に合わせる
 //   4. デプロイ → ウェブアプリ → 全員アクセス可
-//
-// 回答データ形式:
-//   各Day の回答セルには JSON 配列で保存される
-//   例: ["回答1","回答2","回答3",...]
-//   レガシー（プレーンテキスト）の場合は ["テキスト"] に変換して読み取る
 // ============================================================
 
 
@@ -35,9 +35,6 @@ const REG = {
   PIN_COL: 8,    // 暗証番号の列（H列=8）
 };
 
-// --- シート2（プログラム進捗）は自動作成 ---
-const PROG_SHEET_NAME = 'プログラム進捗';
-
 const CONFIG = {
   LINE_NOTIFY_ENABLED: false,
   get LINE_CHANNEL_TOKEN() {
@@ -51,28 +48,17 @@ const CONFIG = {
 
 
 // ============================================================
-// シート2（プログラム進捗）の列定義
+// Dayシートの列定義
 // ============================================================
 
-const PCOL = {
-  NAME: 1,           // A: 参加者名（シート1と紐づけ）
-  // Day 1-7: 各2列（回答 + 日時）
-  // Day1: B(2), C(3)
-  // Day2: D(4), E(5)
-  // Day3: F(6), G(7)
-  // Day4: H(8), I(9)
-  // Day5: J(10), K(11)
-  // Day6: L(12), M(13)
-  // Day7: N(14), O(15)
-  COMPLETED: 16,     // P: 完了フラグ
-  COMPLETED_AT: 17,  // Q: 完了日時
+const DCOL = {
+  TIMESTAMP: 1,  // A: タイムスタンプ
+  NAME: 2,       // B: お名前
+  FIRST_Q: 3,    // C: 質問① (questions start here)
 };
 
-function dayAnswerCol(dayNum) {
-  return 2 + (dayNum - 1) * 2;
-}
-function dayTimestampCol(dayNum) {
-  return 3 + (dayNum - 1) * 2;
+function dayQuestionCol(subIdx) {
+  return DCOL.FIRST_Q + subIdx;
 }
 
 
@@ -181,52 +167,6 @@ const DAILY_QUESTIONS = [
 
 function getQuestionCount(dayNum) {
   return DAILY_QUESTIONS[dayNum - 1].length;
-}
-
-
-// ============================================================
-// 回答JSON パース/シリアライズ ヘルパー
-// ============================================================
-
-/**
- * セルの値を回答配列として安全にパースする
- * - 空 → []
- * - JSON配列文字列 → パース結果
- * - レガシープレーンテキスト → [value]
- */
-function parseAnswersJson(cellValue) {
-  if (!cellValue || cellValue === '') return [];
-  var str = String(cellValue).trim();
-  if (str === '') return [];
-  if (str.charAt(0) === '[') {
-    try {
-      var parsed = JSON.parse(str);
-      if (Array.isArray(parsed)) return parsed;
-    } catch (e) {
-      // パース失敗 → レガシーとして扱う
-    }
-  }
-  // レガシープレーンテキスト
-  return [str];
-}
-
-/**
- * 回答配列をJSON文字列にシリアライズする
- */
-function serializeAnswers(answersArray) {
-  return JSON.stringify(answersArray);
-}
-
-/**
- * 指定日のサブ質問が全て回答済みかチェック
- */
-function isDayFullyComplete(answersArray, dayNum) {
-  var total = getQuestionCount(dayNum);
-  if (answersArray.length < total) return false;
-  for (var i = 0; i < total; i++) {
-    if (!answersArray[i] || String(answersArray[i]).trim() === '') return false;
-  }
-  return true;
 }
 
 
@@ -356,19 +296,8 @@ function handleAuth(body) {
       nameFound = true;
       var rowPin = String(pins[i][0]).trim();
       if (rowPin === pin) {
-        // 認証成功 → シート2から進捗を取得
-        var progSheet = getProgSheet();
-        var progRow = findProgRowByName(progSheet, name);
-        var progress;
-
-        if (progRow) {
-          var progData = progSheet.getRange(progRow, 1, 1, PCOL.COMPLETED_AT).getValues()[0];
-          progress = buildProgressObject(progData);
-        } else {
-          // シート2にまだエントリなし → 初回ログイン、エントリ作成
-          createProgEntry(progSheet, name);
-          progress = buildEmptyProgress();
-        }
+        // 認証成功 → dayシートから進捗を構築
+        var progress = buildProgressObject(name);
 
         return createSuccessResponse({
           registered: true,
@@ -442,7 +371,7 @@ function handleRegister(body) {
 
 
 // ============================================================
-// submit - 回答送信（シート1でPIN照合→シート2に保存）
+// submit - 回答送信（シート1でPIN照合→dayシートに保存）
 // サブ質問対応版: body.sub (0-indexed) で個別サブ質問に回答
 // ============================================================
 
@@ -476,32 +405,33 @@ function handleSubmit(body) {
     return createErrorResponse('認証に失敗しました。', 'AUTH_FAILED');
   }
 
-  // --- シート2で進捗管理 ---
-  var progSheet = getProgSheet();
-  var row = findProgRowByName(progSheet, name);
+  // --- dayシートで進捗管理 ---
+  var sheet = getDaySheet(day);
+  var row = findDayRowByName(sheet, name);
 
   if (!row) {
-    // まだ進捗エントリなし → 作成
-    createProgEntry(progSheet, name);
-    row = findProgRowByName(progSheet, name);
+    // まだこのdayシートにエントリなし → 作成
+    createDayEntry(sheet, name, day);
+    row = findDayRowByName(sheet, name);
   }
 
-  // --- 完了済みチェック ---
-  var completedVal = progSheet.getRange(row, PCOL.COMPLETED).getValue();
-  if (completedVal === true || completedVal === 'TRUE') {
+  // --- 全プログラム完了済みチェック ---
+  var day7Sheet = getDaySheet(7);
+  var day7Row = findDayRowByName(day7Sheet, name);
+  if (day7Row && isDayComplete(day7Sheet, day7Row, 7)) {
     return createErrorResponse('すでに7日間のプログラムを完了しています。', 'ALREADY_COMPLETED');
   }
 
   // --- Day順序チェック: 前のDayが全て完了しているか ---
   if (day > 1) {
-    var prevCellValue = progSheet.getRange(row, dayAnswerCol(day - 1)).getValue();
-    var prevAnswers = parseAnswersJson(prevCellValue);
-    if (!isDayFullyComplete(prevAnswers, day - 1)) {
+    var prevSheet = getDaySheet(day - 1);
+    var prevRow = findDayRowByName(prevSheet, name);
+    if (!prevRow || !isDayComplete(prevSheet, prevRow, day - 1)) {
       return createErrorResponse('Day ' + (day - 1) + ' がまだ完了していません。順番に進めてください。', 'DAY_LOCKED');
     }
 
     // 21:00リセットチェック（前日が完了している場合のみ）
-    var prevTimestamp = progSheet.getRange(row, dayTimestampCol(day - 1)).getValue();
+    var prevTimestamp = prevSheet.getRange(prevRow, DCOL.TIMESTAMP).getValue();
     if (prevTimestamp) {
       var now = new Date();
       var unlockAt = getNextUnlockTime(prevTimestamp);
@@ -512,48 +442,39 @@ function handleSubmit(body) {
     }
   }
 
-  // --- 現在の回答JSONを読み込み ---
-  var currentCellValue = progSheet.getRange(row, dayAnswerCol(day)).getValue();
-  var currentAnswers = parseAnswersJson(currentCellValue);
-
   // --- このサブ質問が回答済みかチェック ---
-  if (currentAnswers[sub] && String(currentAnswers[sub]).trim() !== '') {
+  var existingAnswer = sheet.getRange(row, dayQuestionCol(sub)).getValue();
+  if (existingAnswer && String(existingAnswer).trim() !== '') {
     return createErrorResponse('Day ' + day + ' の質問 ' + (sub + 1) + ' はすでに回答済みです。', 'ALREADY_ANSWERED');
   }
 
   // --- サブ質問の順序チェック: 前のサブ質問が回答済みか ---
   if (sub > 0) {
     for (var s = 0; s < sub; s++) {
-      if (!currentAnswers[s] || String(currentAnswers[s]).trim() === '') {
+      var prevSubAnswer = sheet.getRange(row, dayQuestionCol(s)).getValue();
+      if (!prevSubAnswer || String(prevSubAnswer).trim() === '') {
         return createErrorResponse('質問 ' + (s + 1) + ' がまだ回答されていません。順番に進めてください。', 'SUB_LOCKED');
       }
     }
   }
 
-  // --- 配列を必要なサイズに拡張 ---
-  while (currentAnswers.length <= sub) {
-    currentAnswers.push(null);
-  }
+  // --- 回答を書き込み ---
+  sheet.getRange(row, dayQuestionCol(sub)).setValue(answer.trim());
 
-  // --- 回答を設定 ---
-  currentAnswers[sub] = answer.trim();
-
-  // --- JSONとしてセルに書き込み ---
-  progSheet.getRange(row, dayAnswerCol(day)).setValue(serializeAnswers(currentAnswers));
-
-  // --- タイムスタンプ更新 ---
+  // --- タイムスタンプ ---
   var now = new Date();
   var nowStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
-  progSheet.getRange(row, dayTimestampCol(day)).setValue(nowStr);
 
   // --- Day完了チェック（全サブ質問が回答済みか） ---
-  var dayComplete = isDayFullyComplete(currentAnswers, day);
+  var dayComplete = isDayCompleteAfterWrite(sheet, row, day, sub);
+
+  if (dayComplete) {
+    // 全サブ質問回答済み → タイムスタンプをA列にセット
+    sheet.getRange(row, DCOL.TIMESTAMP).setValue(nowStr);
+  }
 
   if (dayComplete && day === 7) {
     // 全プログラム完了
-    progSheet.getRange(row, PCOL.COMPLETED).setValue(true);
-    progSheet.getRange(row, PCOL.COMPLETED_AT).setValue(nowStr);
-
     if (CONFIG.LINE_NOTIFY_ENABLED) {
       sendLineNotification(name);
     }
@@ -629,28 +550,24 @@ function handleUpdate(body) {
     return createErrorResponse('認証に失敗しました。', 'AUTH_FAILED');
   }
 
-  // シート2で該当行を取得
-  var progSheet = getProgSheet();
-  var row = findProgRowByName(progSheet, name);
+  // dayシートで該当行を取得
+  var sheet = getDaySheet(day);
+  var row = findDayRowByName(sheet, name);
   if (!row) return createErrorResponse('進捗データがありません。', 'NO_PROGRESS');
 
-  // 現在の回答JSONを読み込み
-  var currentCellValue = progSheet.getRange(row, dayAnswerCol(day)).getValue();
-  var currentAnswers = parseAnswersJson(currentCellValue);
-
   // 該当サブ質問が回答済みかチェック（未回答のサブ質問は修正できない）
-  if (!currentAnswers[sub] || String(currentAnswers[sub]).trim() === '') {
+  var existingAnswer = sheet.getRange(row, dayQuestionCol(sub)).getValue();
+  if (!existingAnswer || String(existingAnswer).trim() === '') {
     return createErrorResponse('Day ' + day + ' の質問 ' + (sub + 1) + ' はまだ回答していません。', 'NOT_ANSWERED');
   }
 
   // 回答上書き
-  currentAnswers[sub] = answer.trim();
-  progSheet.getRange(row, dayAnswerCol(day)).setValue(serializeAnswers(currentAnswers));
+  sheet.getRange(row, dayQuestionCol(sub)).setValue(answer.trim());
 
   // タイムスタンプ更新
   var now = new Date();
   var nowStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
-  progSheet.getRange(row, dayTimestampCol(day)).setValue(nowStr + ' (修正)');
+  sheet.getRange(row, DCOL.TIMESTAMP).setValue(nowStr + ' (修正)');
 
   Logger.log('回答修正: ' + name + ' Day' + day + ' Q' + (sub + 1));
 
@@ -664,48 +581,66 @@ function handleUpdate(body) {
 
 
 // ============================================================
-// stats - 統計（シート2ベース）
+// stats - 統計（全dayシートベース）
 // ============================================================
 
 function handleGetStats() {
-  var progSheet = getProgSheet();
-  var lastRow = progSheet.getLastRow();
-
-  if (lastRow <= 1) {
-    return createSuccessResponse({
-      total_participants: 0,
-      completed_count: 0,
-      completion_rate: 0,
-      day_breakdown: {},
-      today_submissions: 0,
-    });
-  }
-
-  var data = progSheet.getRange(2, 1, lastRow - 1, PCOL.COMPLETED_AT).getValues();
-  var total = data.length;
-  var completed = 0;
   var dayBreakdown = {};
+  var allNames = {};
+  var completedNames = {};
   var todaySubs = 0;
   var today = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyy-MM-dd');
 
-  for (var d = 1; d <= 7; d++) { dayBreakdown['day' + d] = 0; }
+  for (var d = 1; d <= 7; d++) {
+    dayBreakdown['day' + d] = 0;
+    var sheet = getDaySheet(d);
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) continue;
 
-  data.forEach(function(row) {
-    if (row[PCOL.COMPLETED - 1] === true || row[PCOL.COMPLETED - 1] === 'TRUE') completed++;
-    for (var d = 1; d <= 7; d++) {
-      var cellVal = row[dayAnswerCol(d) - 1];
-      var ts = row[dayTimestampCol(d) - 1];
-      var answers = parseAnswersJson(cellVal);
-      if (isDayFullyComplete(answers, d)) {
+    var totalQ = getQuestionCount(d);
+    var totalCols = DCOL.FIRST_Q + totalQ - 1;  // 最後の質問列
+    var data = sheet.getRange(2, 1, lastRow - 1, totalCols).getValues();
+
+    for (var r = 0; r < data.length; r++) {
+      var rowName = String(data[r][DCOL.NAME - 1]).trim();
+      if (!rowName) continue;
+      allNames[rowName] = true;
+
+      // この日が完了しているかチェック
+      var allAnswered = true;
+      for (var q = 0; q < totalQ; q++) {
+        var val = data[r][DCOL.FIRST_Q - 1 + q];
+        if (!val || String(val).trim() === '') {
+          allAnswered = false;
+          break;
+        }
+      }
+
+      if (allAnswered) {
         dayBreakdown['day' + d]++;
+
+        // 今日の提出かチェック
+        var ts = data[r][DCOL.TIMESTAMP - 1];
         if (ts) {
           var tsStr = String(ts).replace(' (修正)', '');
-          var subDate = Utilities.formatDate(new Date(tsStr), CONFIG.TIMEZONE, 'yyyy-MM-dd');
-          if (subDate === today) todaySubs++;
+          try {
+            var subDate = Utilities.formatDate(new Date(tsStr), CONFIG.TIMEZONE, 'yyyy-MM-dd');
+            if (subDate === today) todaySubs++;
+          } catch (e) {
+            // タイムスタンプパースエラーは無視
+          }
+        }
+
+        // Day7完了 = プログラム完了
+        if (d === 7) {
+          completedNames[rowName] = true;
         }
       }
     }
-  });
+  }
+
+  var total = Object.keys(allNames).length;
+  var completed = Object.keys(completedNames).length;
 
   return createSuccessResponse({
     total_participants: total,
@@ -721,27 +656,43 @@ function handleGetStats() {
 // プログレス構築
 // ============================================================
 
-function buildProgressObject(rowData) {
+function buildProgressObject(name) {
   var days = {};
   var daysCompleted = 0;
   var currentDay = 1;
   var now = new Date();
 
   for (var d = 1; d <= 7; d++) {
-    var answerVal = rowData[dayAnswerCol(d) - 1];
-    var timestampVal = rowData[dayTimestampCol(d) - 1];
-    var answers = parseAnswersJson(answerVal);
+    var sheet = getDaySheet(d);
+    var row = findDayRowByName(sheet, name);
     var totalSubQuestions = getQuestionCount(d);
+    var answers = [];
     var subCompleted = 0;
+    var timestampVal = null;
 
-    // サブ質問の回答数をカウント
-    for (var s = 0; s < totalSubQuestions; s++) {
-      if (answers[s] && String(answers[s]).trim() !== '') {
-        subCompleted++;
+    if (row) {
+      // ユーザー行が存在 → 各質問列を読み取る
+      var lastQCol = dayQuestionCol(totalSubQuestions - 1);
+      var rowData = sheet.getRange(row, 1, 1, lastQCol).getValues()[0];
+      timestampVal = rowData[DCOL.TIMESTAMP - 1];
+
+      for (var s = 0; s < totalSubQuestions; s++) {
+        var val = rowData[dayQuestionCol(s) - 1];
+        if (val && String(val).trim() !== '') {
+          answers.push(String(val));
+          subCompleted++;
+        } else {
+          answers.push(null);
+        }
+      }
+    } else {
+      // ユーザー行なし → 全て未回答
+      for (var s = 0; s < totalSubQuestions; s++) {
+        answers.push(null);
       }
     }
 
-    var dayFullyComplete = isDayFullyComplete(answers, d);
+    var dayFullyComplete = (subCompleted === totalSubQuestions && totalSubQuestions > 0);
 
     var isUnlocked = false;
     var unlockAt = null;
@@ -750,10 +701,16 @@ function buildProgressObject(rowData) {
     if (d === 1) {
       isUnlocked = true;
     } else {
-      var prevAnswerVal = rowData[dayAnswerCol(d - 1) - 1];
-      var prevTimestamp = rowData[dayTimestampCol(d - 1) - 1];
-      var prevAnswers = parseAnswersJson(prevAnswerVal);
-      var prevDayComplete = isDayFullyComplete(prevAnswers, d - 1);
+      // 前日のシートをチェック
+      var prevSheet = getDaySheet(d - 1);
+      var prevRow = findDayRowByName(prevSheet, name);
+      var prevDayComplete = false;
+      var prevTimestamp = null;
+
+      if (prevRow) {
+        prevDayComplete = isDayComplete(prevSheet, prevRow, d - 1);
+        prevTimestamp = prevSheet.getRange(prevRow, DCOL.TIMESTAMP).getValue();
+      }
 
       if (prevDayComplete && prevTimestamp) {
         var tsStr = String(prevTimestamp).replace(' (修正)', '');
@@ -770,19 +727,9 @@ function buildProgressObject(rowData) {
     // 既に回答があればアンロック扱い
     if (subCompleted > 0) isUnlocked = true;
 
-    // 回答配列を構築（未回答はnull）
-    var answersOutput = [];
-    for (var s = 0; s < totalSubQuestions; s++) {
-      if (answers[s] && String(answers[s]).trim() !== '') {
-        answersOutput.push(answers[s]);
-      } else {
-        answersOutput.push(null);
-      }
-    }
-
     days['day' + d] = {
       questions: DAILY_QUESTIONS[d - 1],
-      answers: answersOutput,
+      answers: answers,
       answered_at: (subCompleted > 0) ? formatDate(timestampVal) : null,
       sub_completed: subCompleted,
       total_sub_questions: totalSubQuestions,
@@ -841,7 +788,7 @@ function buildEmptyProgress() {
 
 
 // ============================================================
-// シート操作ユーティリティ
+// Dayシート操作ユーティリティ
 // ============================================================
 
 /** シート1（登録データ）を取得 */
@@ -849,31 +796,33 @@ function getRegSheet() {
   return SpreadsheetApp.getActiveSpreadsheet().getSheets()[0];
 }
 
-/** シート2（プログラム進捗）を取得・作成 */
-function getProgSheet() {
+/** dayシート（day1〜day7）を取得・自動作成 */
+function getDaySheet(dayNum) {
+  var sheetName = 'day' + dayNum;
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(PROG_SHEET_NAME);
+  var sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
-    sheet = ss.insertSheet(PROG_SHEET_NAME);
-    writeProgHeaders(sheet);
-    Logger.log('シート「' + PROG_SHEET_NAME + '」を作成しました。');
+    sheet = ss.insertSheet(sheetName);
+    writeDayHeaders(sheet, dayNum);
+    Logger.log('シート「' + sheetName + '」を作成しました。');
   }
   return sheet;
 }
 
-/** シート2のヘッダーを書き込み */
-function writeProgHeaders(sheet) {
-  var headers = [
-    'name',
-    'day1_answer', 'day1_at',
-    'day2_answer', 'day2_at',
-    'day3_answer', 'day3_at',
-    'day4_answer', 'day4_at',
-    'day5_answer', 'day5_at',
-    'day6_answer', 'day6_at',
-    'day7_answer', 'day7_at',
-    'completed', 'completed_at',
-  ];
+/** dayシートのヘッダーを書き込み */
+function writeDayHeaders(sheet, dayNum) {
+  var questions = DAILY_QUESTIONS[dayNum - 1];
+  var headers = ['タイムスタンプ', 'お名前'];
+
+  for (var i = 0; i < questions.length; i++) {
+    // 質問テキストの最初の行だけをヘッダーに使用
+    var firstLine = questions[i].split('\n')[0];
+    // 長すぎる場合は40文字で切る
+    if (firstLine.length > 40) {
+      firstLine = firstLine.substring(0, 40) + '...';
+    }
+    headers.push('質問' + numToCircled(i + 1) + ' ' + firstLine);
+  }
 
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
@@ -882,22 +831,29 @@ function writeProgHeaders(sheet) {
   headerRange.setBackground('#4a90d9');
   headerRange.setFontColor('#ffffff');
 
-  sheet.setColumnWidth(1, 140);
-  for (var d = 1; d <= 7; d++) {
-    sheet.setColumnWidth(dayAnswerCol(d), 300);
-    sheet.setColumnWidth(dayTimestampCol(d), 160);
+  // 列幅設定
+  sheet.setColumnWidth(DCOL.TIMESTAMP, 160);
+  sheet.setColumnWidth(DCOL.NAME, 140);
+  for (var i = 0; i < questions.length; i++) {
+    sheet.setColumnWidth(dayQuestionCol(i), 300);
   }
-  sheet.setColumnWidth(PCOL.COMPLETED, 80);
-  sheet.setColumnWidth(PCOL.COMPLETED_AT, 160);
   sheet.setFrozenRows(1);
 }
 
-/** シート2で名前から行番号を検索 */
-function findProgRowByName(sheet, name) {
+/** 数字を丸数字に変換（1〜20対応） */
+function numToCircled(n) {
+  var circled = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩',
+                 '⑪','⑫','⑬','⑭','⑮','⑯','⑰','⑱','⑲','⑳'];
+  if (n >= 1 && n <= 20) return circled[n - 1];
+  return '(' + n + ')';
+}
+
+/** dayシートで名前から行番号を検索（B列） */
+function findDayRowByName(sheet, name) {
   var lastRow = sheet.getLastRow();
   if (lastRow <= 1) return null;
 
-  var nameCol = sheet.getRange(2, PCOL.NAME, lastRow - 1, 1).getValues();
+  var nameCol = sheet.getRange(2, DCOL.NAME, lastRow - 1, 1).getValues();
   for (var i = 0; i < nameCol.length; i++) {
     if (String(nameCol[i][0]).trim() === name.trim()) {
       return i + 2;
@@ -906,13 +862,38 @@ function findProgRowByName(sheet, name) {
   return null;
 }
 
-/** シート2に新規エントリ作成 */
-function createProgEntry(sheet, name) {
-  var newRow = [name];
-  for (var i = 0; i < 14; i++) newRow.push('');  // day1-7 x 2列
-  newRow.push(false);  // completed
-  newRow.push('');     // completed_at
+/** dayシートに新規エントリ作成（名前をB列に、他は空） */
+function createDayEntry(sheet, name, dayNum) {
+  var totalQ = getQuestionCount(dayNum);
+  var newRow = ['', name];  // A: タイムスタンプ(空), B: 名前
+  for (var i = 0; i < totalQ; i++) {
+    newRow.push('');  // 各質問列は空
+  }
   sheet.appendRow(newRow);
+}
+
+/** dayシートの指定行が全サブ質問回答済みかチェック */
+function isDayComplete(sheet, row, dayNum) {
+  var totalQ = getQuestionCount(dayNum);
+  for (var q = 0; q < totalQ; q++) {
+    var val = sheet.getRange(row, dayQuestionCol(q)).getValue();
+    if (!val || String(val).trim() === '') return false;
+  }
+  return true;
+}
+
+/**
+ * 回答書き込み直後に全サブ質問回答済みかチェック（最適化版）
+ * 今書いた sub は回答済みとして扱い、他のセルだけ確認する
+ */
+function isDayCompleteAfterWrite(sheet, row, dayNum, justWrittenSub) {
+  var totalQ = getQuestionCount(dayNum);
+  for (var q = 0; q < totalQ; q++) {
+    if (q === justWrittenSub) continue;  // 今書いたばかりなのでスキップ
+    var val = sheet.getRange(row, dayQuestionCol(q)).getValue();
+    if (!val || String(val).trim() === '') return false;
+  }
+  return true;
 }
 
 /** シート1でPIN照合 */
@@ -985,7 +966,9 @@ function sendLineNotification(name) {
 // セットアップ（手動実行用）
 // ============================================================
 
-function setupProgSheet() {
-  var sheet = getProgSheet();
-  SpreadsheetApp.getUi().alert('セットアップ完了', 'シート「' + PROG_SHEET_NAME + '」を準備しました。', SpreadsheetApp.getUi().ButtonSet.OK);
+function setupDaySheets() {
+  for (var d = 1; d <= 7; d++) {
+    getDaySheet(d);
+  }
+  SpreadsheetApp.getUi().alert('セットアップ完了', 'day1〜day7 シートを準備しました。', SpreadsheetApp.getUi().ButtonSet.OK);
 }
