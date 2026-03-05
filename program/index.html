@@ -1301,10 +1301,10 @@ function localMode(action, data) {
       local.progress.days[dayKey].answered_at = now;
       local.progress.days_completed++;
 
-      // 次のDayのロック状態を設定
+      // 次のDayのロック状態を設定（21:00リセット）
       if (dayIdx < 7) {
         const nextKey = 'day' + (dayIdx + 1);
-        const unlockAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        const unlockAt = getLocalNextUnlockTime(new Date());
         local.progress.days[nextKey].is_time_locked = true;
         local.progress.days[nextKey].unlock_at = unlockAt.toISOString().replace('T', ' ').substring(0, 19);
         local.progress.current_day = dayIdx + 1;
@@ -1320,7 +1320,19 @@ function localMode(action, data) {
   }
 }
 
-// ===== ローカルモードの24時間ロック再計算 =====
+// ===== 次の21:00を計算 =====
+function getLocalNextUnlockTime(completedDate) {
+  const d = new Date(completedDate);
+  const unlock = new Date(d);
+  unlock.setHours(21, 0, 0, 0);
+  // 21:00以降に完了 → 翌日21:00
+  if (d.getTime() >= unlock.getTime()) {
+    unlock.setDate(unlock.getDate() + 1);
+  }
+  return unlock;
+}
+
+// ===== ローカルモードのロック再計算（21:00リセット） =====
 function recalcLocalTimeLocks(local) {
   const now = Date.now();
   let currentDay = 1;

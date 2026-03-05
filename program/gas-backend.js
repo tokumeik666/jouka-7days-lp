@@ -71,6 +71,26 @@ function dayTimestampCol(dayNum) {
   return 5 + (dayNum - 1) * 2;
 }
 
+/**
+ * 次の解放時刻を計算（毎日21:00 JST リセット）
+ * 完了時刻が21:00前 → その日の21:00に解放
+ * 完了時刻が21:00以降 → 翌日の21:00に解放
+ */
+function getNextUnlockTime(completedTimestamp) {
+  var completed = new Date(completedTimestamp);
+  // 完了日の日付を取得（JST）
+  var dateStr = Utilities.formatDate(completed, CONFIG.TIMEZONE, 'yyyy-MM-dd');
+  // その日の21:00 JST
+  var unlock = new Date(dateStr + 'T21:00:00+09:00');
+
+  // 21:00以降に完了した場合は翌日の21:00
+  if (completed.getTime() >= unlock.getTime()) {
+    unlock = new Date(unlock.getTime() + 24 * 60 * 60 * 1000);
+  }
+
+  return unlock;
+}
+
 
 // ============================================================
 // 7日間の質問
@@ -588,18 +608,15 @@ function handleSubmit(body) {
       );
     }
 
-    // 24時間ロックチェック
+    // 21:00リセットチェック
     const prevDayTimestamp = sheet.getRange(row, dayTimestampCol(day - 1)).getValue();
     if (prevDayTimestamp) {
-      const prevDate = new Date(prevDayTimestamp);
       const now = new Date();
-      const hoursPassed = (now.getTime() - prevDate.getTime()) / (1000 * 60 * 60);
-      if (hoursPassed < 24) {
-        const unlockAt = new Date(prevDate.getTime() + 24 * 60 * 60 * 1000);
+      const unlockAt = getNextUnlockTime(prevDayTimestamp);
+      if (now.getTime() < unlockAt.getTime()) {
         const unlockAtStr = Utilities.formatDate(unlockAt, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
-        const remainHours = Math.ceil(24 - hoursPassed);
         return createErrorResponse(
-          'Day ' + day + ' は ' + unlockAtStr + ' に解放されます。（残り約' + remainHours + '時間）',
+          'Day ' + day + ' は ' + unlockAtStr + ' に解放されます。',
           'TIME_LOCKED',
         );
       }
@@ -677,7 +694,7 @@ function buildProgressObject(rowData) {
     var timestampVal = rowData[dayTimestampCol(d) - 1];
     var hasAnswer = answerVal && answerVal !== '';
 
-    // unlock判定: Day1は常に解放、Day2以降は前日完了 + 24時間経過
+    // unlock判定: Day1は常に解放、Day2以降は前日完了 + 21:00リセット
     var isUnlocked = false;
     var unlockAt = null;
     var isTimeLocked = false;
@@ -688,8 +705,7 @@ function buildProgressObject(rowData) {
       var prevAnswer = rowData[dayAnswerCol(d - 1) - 1];
       var prevTimestamp = rowData[dayTimestampCol(d - 1) - 1];
       if (prevAnswer && prevAnswer !== '' && prevTimestamp) {
-        var prevDate = new Date(prevTimestamp);
-        var unlockTime = new Date(prevDate.getTime() + 24 * 60 * 60 * 1000);
+        var unlockTime = getNextUnlockTime(prevTimestamp);
         if (now.getTime() >= unlockTime.getTime()) {
           isUnlocked = true;
         } else {
