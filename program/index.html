@@ -1117,16 +1117,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // URLパラメータからUID取得（エルメ用）
-  state.uid = params.get('uid') || params.get('id') || null;
-
   // ローカルストレージから復元
-  if (!state.uid) state.uid = localStorage.getItem('jouka_uid') || null;
   state.pin = localStorage.getItem('jouka_pin') || null;
   state.name = localStorage.getItem('jouka_name') || '';
 
   // 保存済み情報があれば自動ログイン試行
-  if (state.uid && state.pin) {
+  if (state.name && state.pin) {
     autoLogin();
   } else {
     // ログイン画面を表示
@@ -1347,13 +1343,12 @@ function recalcLocalTimeLocks(local) {
   local.progress.current_day = currentDay;
 }
 
-// ===== AUTO LOGIN（保存済みUID+PINで自動ログイン）=====
+// ===== AUTO LOGIN（保存済み名前+PINで自動ログイン）=====
 async function autoLogin() {
-  const result = await apiCall('login', { uid: state.uid, pin: state.pin });
+  const result = await apiCall('auth', { name: state.name, pin: state.pin });
 
   if (result.success && result.pin_verified) {
-    state.name = result.name || '';
-    state.uid = result.uid || state.uid;
+    state.name = result.name || state.name;
     parseProgress(result.progress);
     saveSession();
     hideLoading();
@@ -1370,12 +1365,12 @@ async function autoLogin() {
 
 // ===== RELOAD DASHBOARD（ダッシュボード再読み込み）=====
 async function reloadDashboard() {
-  if (!state.uid || !state.pin) {
+  if (!state.name || !state.pin) {
     showScreen('screen-welcome', true);
     return;
   }
 
-  const result = await apiCall('login', { uid: state.uid, pin: state.pin });
+  const result = await apiCall('auth', { name: state.name, pin: state.pin });
 
   if (result.success && result.pin_verified) {
     state.name = result.name || '';
@@ -1387,15 +1382,13 @@ async function reloadDashboard() {
 
 // ===== SESSION HELPERS =====
 function saveSession() {
-  localStorage.setItem('jouka_uid', state.uid);
   localStorage.setItem('jouka_pin', state.pin);
   localStorage.setItem('jouka_name', state.name);
 }
 
 function clearSession() {
-  state.uid = null;
   state.pin = null;
-  localStorage.removeItem('jouka_uid');
+  state.name = '';
   localStorage.removeItem('jouka_pin');
   localStorage.removeItem('jouka_name');
 }
@@ -1645,7 +1638,7 @@ async function handleSubmit() {
   showScreen('screen-sending', true);
 
   const result = await apiCall('submit', {
-    uid: state.uid,
+    name: state.name,
     pin: state.pin,
     day: state.currentDay,
     answer: answer
