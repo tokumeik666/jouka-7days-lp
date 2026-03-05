@@ -502,31 +502,6 @@ section{position:relative;z-index:1}
   50%{opacity:1;text-shadow:0 0 60px rgba(255,255,255,.25),0 0 120px rgba(90,155,181,.15)}
 }
 
-/* 怒 悲 苦 — 毛筆スタイル（復活と同スタイル） */
-.dohiku-section{background:#000;padding:80px 0;text-align:center;position:relative;z-index:1}
-.dohiku-text{
-  font-family:'Shippori Mincho','Zen Old Mincho','HiraMinProN-W6','游明朝','YuMincho',serif;
-  font-size:clamp(4rem,20vw,8rem);
-  font-weight:900;
-  color:#fff;
-  letter-spacing:.2em;
-  line-height:1;
-  position:relative;
-  display:inline-block;
-  text-shadow:
-    0 0 40px rgba(255,255,255,.15),
-    0 0 80px rgba(200,100,80,.1);
-  animation:fukkatsuPulse 4s ease-in-out infinite;
-}
-.dohiku-text::before{
-  content:'怒　悲　苦';
-  position:absolute;
-  inset:0;
-  color:transparent;
-  -webkit-text-stroke:1px rgba(200,100,80,.3);
-  filter:blur(8px);
-  z-index:-1;
-}
 
 
 /* ============================================================
@@ -889,11 +864,6 @@ section{position:relative;z-index:1}
   </div>
 </section>
 
-<section class="sec sec-void" style="background:#000;padding:80px 0">
-<div style="text-align:center;position:relative">
-  <p class="fukkatsu-text" data-text="怒　悲　苦" style="color:#fff;text-shadow:0 0 40px rgba(255,255,255,.15),0 0 80px rgba(200,100,80,.1)">怒　悲　苦</p>
-</div>
-</section>
 
 <hr class="water-rule">
 
