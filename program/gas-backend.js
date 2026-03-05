@@ -205,7 +205,7 @@ function handleAuth(body) {
   var startRow = 1;
   var firstCellVal = String(regSheet.getRange(1, REG.NAME_COL).getValue()).trim();
   // ヘッダーっぽい文字列なら2行目から検索
-  if (firstCellVal === '' || firstCellVal === '名前' || firstCellVal === 'お名前' || firstCellVal === 'name' || firstCellVal === 'Name') {
+  if (firstCellVal === '' || /名前|name|お名前|入力/i.test(firstCellVal)) {
     startRow = 2;
   }
 
@@ -637,7 +637,7 @@ function verifyPin(regSheet, name, pin) {
 
   var startRow = 1;
   var firstCellVal = String(regSheet.getRange(1, REG.NAME_COL).getValue()).trim();
-  if (firstCellVal === '' || firstCellVal === '名前' || firstCellVal === 'お名前' || firstCellVal === 'name' || firstCellVal === 'Name') {
+  if (firstCellVal === '' || /名前|name|お名前|入力/i.test(firstCellVal)) {
     startRow = 2;
   }
   if (lastRow < startRow) return false;
