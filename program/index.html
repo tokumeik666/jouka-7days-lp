@@ -873,6 +873,55 @@ body::after {
   50% { border-color: rgba(139, 126, 184, 0.35); }
 }
 
+/* ===== Edit Answer Button ===== */
+.btn-edit-answer {
+  display: inline-block;
+  font-size: 0.78rem;
+  color: var(--tsuki-dim);
+  cursor: pointer;
+  margin-top: 28px;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(232, 226, 214, 0.2);
+  font-family: 'Shippori Mincho', serif;
+  letter-spacing: 0.15em;
+  padding-bottom: 2px;
+}
+.btn-edit-answer:hover { opacity: 1; }
+
+.edit-day-list {
+  width: 100%;
+  max-width: 400px;
+  margin: 16px auto 0;
+}
+.edit-day-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border: 1px solid rgba(90, 155, 181, 0.1);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  background: rgba(90, 155, 181, 0.03);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.edit-day-item:hover {
+  border-color: rgba(90, 155, 181, 0.3);
+  background: rgba(90, 155, 181, 0.06);
+}
+.edit-day-item .edit-day-name {
+  font-size: 0.82rem;
+  color: var(--tsuki);
+}
+.edit-day-item .edit-day-btn {
+  font-size: 0.7rem;
+  color: var(--mizu-pale);
+  letter-spacing: 0.1em;
+}
+
 /* ===== Water Line Divider ===== */
 .water-line {
   border: none;
@@ -969,6 +1018,9 @@ body::after {
 
     <button class="btn-start-day fade-in d4" id="btnStartDay">今日のワークを始める</button>
     <div class="completed-msg" id="completedMsg" style="display:none;"></div>
+
+    <button class="btn-edit-answer fade-in d5" id="btnEditAnswer" style="display:none;">回答を修正する</button>
+    <div class="edit-day-list" id="editDayList" style="display:none;"></div>
   </div>
 </div>
 
@@ -1148,6 +1200,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('btnBackToDash').addEventListener('click', () => {
     reloadDashboard();
   });
+  $('btnEditAnswer').addEventListener('click', toggleEditList);
 });
 
 // ===== WATER PARTICLES =====
@@ -1576,6 +1629,31 @@ function renderDashboard() {
     completedMsg.style.display = 'none';
     timeLockWrap.style.display = 'none';
   }
+
+  // 修正ボタン：1つ以上完了済みなら表示
+  const hasCompleted = state.progress.some(p => p);
+  $('btnEditAnswer').style.display = hasCompleted ? '' : 'none';
+  $('editDayList').style.display = 'none';
+}
+
+// ===== EDIT LIST TOGGLE =====
+function toggleEditList() {
+  const list = $('editDayList');
+  if (list.style.display !== 'none') {
+    list.style.display = 'none';
+    return;
+  }
+
+  list.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    if (!state.progress[i]) continue;
+    const item = document.createElement('div');
+    item.className = 'edit-day-item';
+    item.innerHTML = '<span class="edit-day-name">' + DAY_TITLES[i] + '</span><span class="edit-day-btn">修正 →</span>';
+    item.addEventListener('click', ((dayNum) => () => handleEditDay(dayNum))(i + 1));
+    list.appendChild(item);
+  }
+  list.style.display = '';
 }
 
 // ===== COUNTDOWN TIMER =====
