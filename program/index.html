@@ -922,6 +922,76 @@ body::after {
   letter-spacing: 0.1em;
 }
 
+/* ===== Sub-question Progress ===== */
+.sub-progress {
+  font-size: 0.7rem;
+  color: var(--mizu);
+  opacity: 0.6;
+  margin-bottom: 8px;
+  letter-spacing: 0.2em;
+}
+
+/* ===== Sub-question Fade Transition ===== */
+.question-card.sub-fade-out {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.question-card.sub-fade-in {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.answer-area.sub-fade-out {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.answer-area.sub-fade-in {
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+/* ===== Toast Success Variant ===== */
+.toast.success {
+  background: rgba(90, 155, 181, 0.9);
+}
+
+/* ===== Edit Sub-question List ===== */
+.edit-sub-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border: 1px solid rgba(90, 155, 181, 0.08);
+  border-radius: 4px;
+  margin-bottom: 6px;
+  background: rgba(90, 155, 181, 0.02);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.edit-sub-item:hover {
+  border-color: rgba(90, 155, 181, 0.25);
+  background: rgba(90, 155, 181, 0.05);
+}
+.edit-sub-q {
+  font-size: 0.75rem;
+  color: var(--tsuki-dim);
+  line-height: 1.8;
+  flex: 1;
+  margin-right: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.edit-sub-btn {
+  font-size: 0.68rem;
+  color: var(--mizu-pale);
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 /* ===== Water Line Divider ===== */
 .water-line {
   border: none;
@@ -1114,32 +1184,95 @@ body::after {
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbxuMJx7va4a5ST3i5z9LsIZPH1PoHHZwfWf0MSj3-gvotBRf9Fo5gL3UU8TC7UZjRvq/exec';
 
 const QUESTIONS = [
-  '今、あなたの心の中で一番重たいものは何ですか？\n誰にも見せなくていい場所です。ここに、そのまま置いてください。',
-  'あなたが "本当はこうしたかった" と思っていることは何ですか？\n誰かのためではなく、あなた自身の声を聞かせてください。',
-  'もし過去の自分に一つだけ伝えられるとしたら、何と言いますか？',
-  'あなたが無意識に蓋をしている感情はありますか？\n怒り、悲しみ、寂しさ... どんなものでも構いません。',
-  'あなたが手放したいのに、まだ握りしめているものは何ですか？',
-  '今のあなたが、一番欲しい言葉は何ですか？\n自分自身にかけてあげたい言葉を書いてください。',
-  '7日間を終えた今、あなたの心の器には何が見えますか？\n空っぽになった器に、これから何を入れていきたいですか？'
+  // Day 1: 過去の浄化 (7q)
+  [
+    'あなたが今も引きずっている「過去」は何ですか?\n人間関係(元カレ、元カノ、友人、家族、職場の人)?\nお金(借金、浪費、投資の失敗)?\n仕事(転職、退職、失業)?\n健康(病気、妊娠、流産)?\nそれとも、他の何か?\n思いつく限り、全て書いてください。',
+    'その「過去」を思い出すと、どんな感情が湧いてきますか?\n寂しい? 悲しい? 悔しい? 腹が立つ? 不安? 恐怖?\n全ての感情を、正直に書いてください。',
+    '「あの時、こうしていれば...」\nそう後悔していることを、全て書き出してください。\n人間関係、お金、仕事、健康、何でも構いません。\n思いつく限り、全て書いてください。',
+    '過去の失敗や選択で、今も自分を責めていることはありますか?\n「あの時の私が馬鹿だった」\n「なんであんな選択したんだろう」\n「私のせいで...」\nその時の気持ちを、全て書き出してください。',
+    'もし過去に戻れるなら、あなたは何をしますか?\n人間関係をやり直す? お金の使い方を変える?\n違う仕事を選ぶ? 健康にもっと気を使う?\n具体的に書いてください。',
+    'その「過去」のせいで、あなたは何を失ったと感じていますか?\n人? お金? 時間? 健康? チャンス? 幸せ?\n正直に書いてください。',
+    'でも、現実には過去には戻れません。\nそれを理解した上で、今のあなたは何を感じますか?\n諦め? 悲しみ? それとも、もう前を向きたい?\n正直な気持ちを書いてください。',
+  ],
+  // Day 2: 過去の振り返り・手放し (7q)
+  [
+    '昨日過去を書き出した後、何か変化はありましたか?\n夜、よく眠れましたか?\n朝、目覚めた時、何か違いを感じましたか?\n小さなことでもいいので、気づいたことを書いてください。',
+    '昨日書き出した「過去」のことを、今どう思いますか?\nまだ引きずってる? 少し楽になった? まだモヤモヤしてる?\n正直な気持ちを書いてください。',
+    'その「過去」から、あなたは何を得ましたか?\n「何も得ていない」と思うかもしれません。\nでも、本当に何もないですか?\n学び? 経験? 強さ?\nそれとも、何もない?\n正直に書いてください。',
+    'もし、過去のあなた(5年前のあなた)が、今のあなたの目の前に現れたら、あなたは何と声をかけますか?\n「その選択は間違ってるよ」?\n「そのままでいいよ」?\n「もっとこうしたほうがいいよ」?\n過去の自分に、メッセージを送ってください。',
+    'あなたは、いつまで過去に囚われていたいですか?\n正直に答えてください。\nまだしばらく引きずっていたい?\nそれとも、今すぐ手放したい?',
+    '「過去を手放す」と決めた時、何が怖いですか?\n思い出がなくなること?\nあの人を完全に忘れてしまうこと?\n新しい一歩を踏み出すこと?\nまた同じ失敗をすること?\n正直な気持ちを書いてください。',
+    'もし、今日で過去を完全に手放せるとしたら、あなたは手放しますか?\nそれとも、まだ持っていたいですか?\n正直に答えてください。',
+  ],
+  // Day 3: 怒り・許せないこと (8q)
+  [
+    'あなたが今も許せない人・出来事は何ですか?\n人(家族、恋人、友人、上司、同僚)?\n会社(ブラック企業、不当な扱い)?\n社会(不公平、理不尽)?\n自分の身体(病気、妊娠できない、太っている)?\nお金(貧乏、借金、詐欺)?\n思いつく限り、全て書いてください。',
+    'その人・出来事に、何をされましたか?\nまたは、何が起きましたか?\n具体的に書いてください。\n思い出すだけで腹が立つかもしれません。\nでも、全て書き出してください。',
+    'それを思い出すと、どんな感情が湧いてきますか?\n怒り? 憎しみ? 悲しみ? 悔しさ? 無力感?\n全ての感情を、正直に書いてください。',
+    'もし、その人が今あなたの目の前にいたら、あなたは何と言いたいですか?\n遠慮なく、思いつく限り、全て書いてください。\n汚い言葉でも構いません。\n誰も見ていません。',
+    '「あの人のせいで、私の人生は...」\n「あの出来事のせいで、私は...」\nそう思ってしまうことはありますか?\nある場合、具体的に何を失ったと感じていますか?',
+    '「なんで私ばっかり...」\nそう思ったことはありますか?\nある場合、その時の気持ちを全て書いてください。',
+    '復讐したいと思ったことはありますか?\n正直に答えてください。\nある場合、どんな復讐を考えましたか?',
+    'でも、復讐しても、あなたの心は満たされないかもしれません。\nそれでも、あなたは復讐したいですか?\nそれとも、もう手放したいですか?\n正直な気持ちを書いてください。',
+  ],
+  // Day 4: 怒りの振り返り・手放し (7q)
+  [
+    '昨日、怒りを書き出した後、何か変化はありましたか?\n少し楽になった? まだモヤモヤしてる?\n正直な気持ちを書いてください。',
+    '昨日書き出した人・出来事のことを、今どう思いますか?\nまだ許せない? 少し許せるようになった? どうでもよくなった?\n正直に書いてください。',
+    '「なんで私ばっかり...」\nそう思ったことはありますか?\nある場合、その時の気持ちを全て書き出してください。',
+    'あなたが怒りを感じる時、本当はどうしてほしかったんですか?\n謝ってほしかった? 認めてほしかった?\n助けてほしかった? 理解してほしかった?\n本当の気持ちを書いてください。',
+    'もし、あなたが許せない人が、今あなたの目の前に現れて、「本当にごめん」と謝ってきたら、あなたはどうしますか?\n許せる? 許せない?\n正直な気持ちを書いてください。',
+    'その人を許すことで、あなたは何を失いますか?\n怒る理由? 被害者でいられること?\nそれとも、何も失わない?\n正直に書いてください。',
+    'もし、今日でその怒りを完全に手放せるとしたら、あなたは手放しますか?\nそれとも、まだ持っていたいですか?\n正直に答えてください。',
+  ],
+  // Day 5: 自己否定 (7q)
+  [
+    '「私なんて...」\n普段、そう思ってしまうことはありますか?\nどんな時に、そう思いますか?\n全て書き出してください。',
+    '自分のどこが嫌いですか?\n自分のどこが許せないですか?\n容姿、性格、過去の行動...\n全て、書き出してください。',
+    '「どうせ私には無理」\n「私には価値がない」\nそう思ってしまう瞬間はありますか?\nその時の気持ちを、全て書いてください。',
+    '他人と自分を比べて、落ち込むことはありますか?\n「あの人はできるのに、私は...」\n「みんなは幸せなのに、私は...」\nその時の気持ちを、全て書いてください。',
+    '自分を責める時、あなたは自分に何と言っていますか?\n「馬鹿」「ダメ人間」「クズ」\n思いつく限り、全て書いてください。',
+    'もし、あなたの大切な友人が、今あなたが書いたような自己否定をしていたら、あなたは何と声をかけますか?',
+    'もし、今日でその自己否定を完全に手放せるとしたら、あなたは手放しますか?\nそれとも、まだ持っていたいですか?\n正直に答えてください。',
+  ],
+  // Day 6: 未来・前向き (7q)
+  [
+    '5日間、ネガティブな感情を吐き出してきました。\n今、どんな気持ちですか?\n心は軽くなりましたか?\n正直な気持ちを書いてください。',
+    '今、あなたの心の中に、どんな感情がありますか?\nスッキリ? ワクワク? それとも、まだモヤモヤ?\n正直に書いてください。',
+    'あなたは、本当はどんな気持ちで毎日を過ごしたいですか?\n幸せ? 安心? ワクワク? 穏やか?\n素直な気持ちを書いてください。',
+    'あなたは、本当はどんな自分になりたいですか?\n自信がある自分? 優しい自分? 強い自分? 自由な自分?\n素直に書いてください。',
+    'もし、1年後、あなたの願いが全て叶っているとしたら、どんな生活をしていますか?\n朝起きて、何をしていますか?\n誰といますか? どんな気持ちですか?\n具体的に想像して、書いてください。',
+    'その未来を想像した時、どんな感情が湧いてきましたか?\nワクワクした? 嬉しい?\nそれとも、「無理かも...」と思った?\n正直に書いてください。',
+    'その未来を手に入れるために、今日から何を始めますか?\n小さなことでもいいです。\n一つだけ、書いてください。',
+  ],
+  // Day 7: 7日間の振り返り (6q)
+  [
+    '7日間を振り返って、どうでしたか?\n心は軽くなりましたか?\n何か気づいたことはありましたか?\n感想を自由に書いてください。',
+    '7日前のあなたと、今のあなたを比べてみてください。\n何が変わりましたか?\n心? 気持ち? 考え方?\n気づいたことを、全て書いてください。',
+    'これから、あなたは何をしたいですか?\n挑戦したいこと、始めたいこと、やめたいこと。\n全て書いてください。',
+    '2026年、あなたはどんな年にしたいですか?\nどんな自分になっていたいですか?\n何を手に入れていたいですか?\n自由に書いてください。',
+    '1年後の自分に、メッセージを送ってください。\n「1年後の私へ」\nどんな言葉を贈りますか?',
+    '今のあなたに、一言メッセージを送るとしたら、何と言いますか?\n自分を褒めてください。\n自分を励ましてください。',
+  ],
 ];
 
 const DAY_TITLES = [
-  '第一日 — 重荷を降ろす',
-  '第二日 — 本当の声',
-  '第三日 — 過去への手紙',
-  '第四日 — 蓋をした感情',
-  '第五日 — 手放す',
-  '第六日 — 自分への言葉',
-  '第七日 — 新しい器'
+  '第一日 — 過去の浄化',
+  '第二日 — 過去の手放し',
+  '第三日 — 怒りの浄化',
+  '第四日 — 怒りの手放し',
+  '第五日 — 自己否定の浄化',
+  '第六日 — 未来への扉',
+  '第七日 — 新しい自分'
 ];
 
 const DONE_MESSAGES = [
-  'あなたの重荷を受け取りました。\n今夜、浄化のエネルギーワークを行います。\nゆっくりお休みください。',
-  'あなたの本当の声を受け取りました。\nその声は、もうあなたの中で眠り続ける必要はありません。',
-  '過去の自分への言葉を受け取りました。\nあの頃のあなたに、確かに届いています。',
-  '蓋をしていた感情を受け取りました。\nその感情は、今日から少しずつ溶けていきます。',
-  '手放す準備が整いました。\n握りしめていたものは、もうあなたを縛りません。',
-  'あなたが自分にかけた言葉を受け取りました。\nその言葉は、これからもあなたを照らし続けます。',
+  '過去と向き合う勇気を持ったあなた。\n今夜、浄化のエネルギーが働きます。\nゆっくりお休みください。',
+  '過去を手放す準備が整いました。\n明日からは、怒りと向き合います。',
+  '怒りを全て吐き出しました。\n今夜、浄化のエネルギーが働きます。',
+  '怒りを手放す準備が整いました。\n明日は、自分自身と向き合います。',
+  '自己否定と向き合いました。\n明日からは、未来に目を向けます。',
+  '未来への扉が開きました。\n最終日は、7日間の旅を振り返ります。',
   ''
 ];
 
@@ -1151,10 +1284,14 @@ let state = {
   progress: [],       // [true, false, false, ...] 各Dayの完了状態
   timeLocked: [],     // [false, false, true, ...] 24h ロック状態
   unlockTimes: [],    // [null, null, '2026-03-06 22:30:00', ...] 解放日時
-  answers: [],        // [null, null, ...] 各Dayの回答テキスト
+  answers: [],        // [null, null, ...] 各Dayの回答テキスト（後方互換用）
+  subAnswers: [],     // 2D配列: [[ans1,ans2,...], [ans1,...], ...] サブ質問ごとの回答
   currentDay: 1,
+  currentSubQ: 0,     // 現在のサブ質問インデックス (0-indexed)
+  totalSubQ: 0,       // 現在のDayのサブ質問数
   editMode: false,    // 修正モードフラグ
-  editDay: null       // 修正中のDay番号
+  editDay: null,      // 修正中のDay番号
+  editSubQ: null      // 修正中のサブ質問番号 (0-indexed)
 };
 let countdownInterval = null;
 
@@ -1311,7 +1448,10 @@ function localMode(action, data) {
       for (let d = 1; d <= 7; d++) {
         local.progress.days['day' + d] = {
           is_completed: false, is_unlocked: d === 1,
-          is_time_locked: false, unlock_at: null, answered_at: null
+          is_time_locked: false, unlock_at: null, answered_at: null,
+          answers: new Array(QUESTIONS[d - 1].length).fill(null),
+          sub_completed: 0,
+          total_sub_questions: QUESTIONS[d - 1].length
         };
       }
       localStorage.setItem(key, JSON.stringify(local));
@@ -1328,9 +1468,10 @@ function localMode(action, data) {
       localStorage.setItem(key, JSON.stringify(local));
       return { success: true, pin_verified: true, registered: true, name: local.name, progress: local.progress, current_day: local.progress.current_day };
 
-    case 'submit':
+    case 'submit': {
       if (!local) return { success: false, error: 'not_found' };
       const dayIdx = parseInt(data.day);
+      const subIdx = parseInt(data.sub) || 0;
       const dayKey = 'day' + dayIdx;
 
       // 24時間ロックチェック
@@ -1338,24 +1479,69 @@ function localMode(action, data) {
         return { success: false, error: '次のワークまでもう少しお待ちください。', code: 'TIME_LOCKED' };
       }
 
-      const now = new Date().toISOString();
-      local.progress.days[dayKey].is_completed = true;
-      local.progress.days[dayKey].answered_at = now;
-      local.progress.days_completed++;
+      // Initialize answers array if needed
+      if (!local.progress.days[dayKey].answers) {
+        local.progress.days[dayKey].answers = new Array(QUESTIONS[dayIdx - 1].length).fill(null);
+        local.progress.days[dayKey].sub_completed = 0;
+        local.progress.days[dayKey].total_sub_questions = QUESTIONS[dayIdx - 1].length;
+      }
 
-      // 次のDayのロック状態を設定（21:00リセット）
-      if (dayIdx < 7) {
-        const nextKey = 'day' + (dayIdx + 1);
-        const unlockAt = getLocalNextUnlockTime(new Date());
-        local.progress.days[nextKey].is_time_locked = true;
-        local.progress.days[nextKey].unlock_at = unlockAt.toISOString().replace('T', ' ').substring(0, 19);
-        local.progress.current_day = dayIdx + 1;
-      } else {
-        local.progress.current_day = 7;
+      // Save sub-answer
+      local.progress.days[dayKey].answers[subIdx] = data.answer;
+
+      // Count completed sub-questions
+      const subCompleted = local.progress.days[dayKey].answers.filter(a => a != null && a !== '').length;
+      local.progress.days[dayKey].sub_completed = subCompleted;
+
+      const totalSubQ = QUESTIONS[dayIdx - 1].length;
+      const isLastSub = (subCompleted >= totalSubQ);
+
+      if (isLastSub) {
+        // All sub-questions answered: mark day complete
+        const now = new Date().toISOString();
+        local.progress.days[dayKey].is_completed = true;
+        local.progress.days[dayKey].answered_at = now;
+        local.progress.days_completed++;
+
+        // Time lock next day
+        if (dayIdx < 7) {
+          const nextKey = 'day' + (dayIdx + 1);
+          const unlockAt = getLocalNextUnlockTime(new Date());
+          if (!local.progress.days[nextKey]) {
+            local.progress.days[nextKey] = {
+              is_completed: false, is_unlocked: false,
+              is_time_locked: false, unlock_at: null, answered_at: null,
+              answers: new Array(QUESTIONS[dayIdx].length).fill(null),
+              sub_completed: 0,
+              total_sub_questions: QUESTIONS[dayIdx].length
+            };
+          }
+          local.progress.days[nextKey].is_time_locked = true;
+          local.progress.days[nextKey].unlock_at = unlockAt.toISOString().replace('T', ' ').substring(0, 19);
+          local.progress.current_day = dayIdx + 1;
+        } else {
+          local.progress.current_day = 7;
+        }
       }
 
       localStorage.setItem(key, JSON.stringify(local));
-      return { success: true, day: dayIdx, is_complete: dayIdx === 7 };
+      return { success: true, day: dayIdx, sub: subIdx, is_complete: dayIdx === 7 && isLastSub };
+    }
+
+    case 'update': {
+      if (!local) return { success: false, error: 'not_found' };
+      const updDayIdx = parseInt(data.day);
+      const updSubIdx = parseInt(data.sub) || 0;
+      const updDayKey = 'day' + updDayIdx;
+
+      if (!local.progress.days[updDayKey].answers) {
+        local.progress.days[updDayKey].answers = new Array(QUESTIONS[updDayIdx - 1].length).fill(null);
+      }
+      local.progress.days[updDayKey].answers[updSubIdx] = data.answer;
+
+      localStorage.setItem(key, JSON.stringify(local));
+      return { success: true, day: updDayIdx, sub: updSubIdx };
+    }
 
     default:
       return { success: false, error: 'unknown_action' };
@@ -1459,11 +1645,17 @@ function parseProgress(progressData) {
   state.timeLocked = [false,false,false,false,false,false,false];
   state.unlockTimes = [null,null,null,null,null,null,null];
   state.answers = [null,null,null,null,null,null,null];
+  state.subAnswers = [];
   state.currentDay = 1;
+
+  // Initialize subAnswers with null arrays matching QUESTIONS structure
+  for (let d = 0; d < 7; d++) {
+    state.subAnswers[d] = new Array(QUESTIONS[d].length).fill(null);
+  }
 
   if (!progressData) return;
 
-  // GAS format: { days: { day1: {is_completed, is_time_locked, unlock_at, answer}, ... }, current_day }
+  // New GAS format: { days: { day1: {is_completed, is_time_locked, unlock_at, answers:[], sub_completed, total_sub_questions}, ... }, current_day }
   if (progressData.days) {
     for (let d = 1; d <= 7; d++) {
       const dayData = progressData.days['day' + d];
@@ -1471,7 +1663,20 @@ function parseProgress(progressData) {
         state.progress[d - 1] = !!dayData.is_completed;
         state.timeLocked[d - 1] = !!dayData.is_time_locked;
         state.unlockTimes[d - 1] = dayData.unlock_at || null;
-        state.answers[d - 1] = dayData.answer || null;
+
+        // Handle sub-question answers (new format: answers array)
+        if (Array.isArray(dayData.answers)) {
+          state.subAnswers[d - 1] = dayData.answers.slice();
+          // Pad with nulls if needed
+          while (state.subAnswers[d - 1].length < QUESTIONS[d - 1].length) {
+            state.subAnswers[d - 1].push(null);
+          }
+        }
+        // Backward compat: single answer field
+        else if (dayData.answer) {
+          state.answers[d - 1] = dayData.answer;
+          state.subAnswers[d - 1][0] = dayData.answer;
+        }
       }
     }
     state.currentDay = progressData.current_day || 1;
@@ -1540,6 +1745,10 @@ async function handleEnter() {
   } else {
     state.progress = [false,false,false,false,false,false,false];
     state.currentDay = result.current_day || 1;
+    state.subAnswers = [];
+    for (let d = 0; d < 7; d++) {
+      state.subAnswers[d] = new Array(QUESTIONS[d].length).fill(null);
+    }
   }
 
   renderDashboard();
@@ -1620,12 +1829,39 @@ function renderDashboard() {
     }
   } else {
     statusLabel.textContent = '第 ' + state.currentDay + ' 日 の ワ ー ク';
-    statusQ.textContent = QUESTIONS[state.currentDay - 1].replace(/\n/g, '');
-    if (statusQ.textContent.length > 40) {
-      statusQ.textContent = statusQ.textContent.substring(0, 40) + '...';
+
+    // Calculate sub-progress for current day
+    const dayIdx = state.currentDay - 1;
+    const dayQuestions = QUESTIONS[dayIdx];
+    const daySubAnswers = state.subAnswers[dayIdx] || [];
+    const subCompleted = daySubAnswers.filter(a => a != null && a !== '').length;
+    const totalSubQ = dayQuestions.length;
+
+    // Find first unanswered sub-question
+    let nextSubIdx = 0;
+    for (let s = 0; s < totalSubQ; s++) {
+      if (!daySubAnswers[s]) { nextSubIdx = s; break; }
     }
+
+    // Show sub-progress if partially answered
+    let statusText = '';
+    if (subCompleted > 0 && subCompleted < totalSubQ) {
+      statusText = '質問 ' + subCompleted + '/' + totalSubQ + ' まで回答済み\n';
+    }
+
+    // Show next unanswered question preview
+    const nextQ = dayQuestions[nextSubIdx].replace(/\n/g, '');
+    statusText += nextQ.length > 40 ? nextQ.substring(0, 40) + '...' : nextQ;
+    statusQ.textContent = statusText;
+
     btnStart.style.display = '';
-    btnStart.textContent = state.currentDay === 1 ? '浄化を始める' : '今日のワークを始める';
+    if (state.currentDay === 1 && subCompleted === 0) {
+      btnStart.textContent = '浄化を始める';
+    } else if (subCompleted > 0) {
+      btnStart.textContent = '続きのワークを始める';
+    } else {
+      btnStart.textContent = '今日のワークを始める';
+    }
     completedMsg.style.display = 'none';
     timeLockWrap.style.display = 'none';
   }
@@ -1647,11 +1883,27 @@ function toggleEditList() {
   list.innerHTML = '';
   for (let i = 0; i < 7; i++) {
     if (!state.progress[i]) continue;
-    const item = document.createElement('div');
-    item.className = 'edit-day-item';
-    item.innerHTML = '<span class="edit-day-name">' + DAY_TITLES[i] + '</span><span class="edit-day-btn">修正 →</span>';
-    item.addEventListener('click', ((dayNum) => () => handleEditDay(dayNum))(i + 1));
-    list.appendChild(item);
+
+    // Day header
+    const header = document.createElement('div');
+    header.className = 'edit-day-item';
+    header.style.cursor = 'default';
+    header.style.borderColor = 'rgba(90, 155, 181, 0.2)';
+    header.innerHTML = '<span class="edit-day-name" style="font-weight:600;">' + DAY_TITLES[i] + '</span>';
+    list.appendChild(header);
+
+    // Sub-question items for this day
+    const dayQuestions = QUESTIONS[i];
+    const daySubAnswers = state.subAnswers[i] || [];
+    for (let s = 0; s < dayQuestions.length; s++) {
+      if (!daySubAnswers[s]) continue; // only show answered sub-questions
+      const subItem = document.createElement('div');
+      subItem.className = 'edit-sub-item';
+      const qPreview = dayQuestions[s].replace(/\n/g, ' ').substring(0, 50);
+      subItem.innerHTML = '<span class="edit-sub-q">Q' + (s + 1) + '. ' + qPreview + (dayQuestions[s].length > 50 ? '...' : '') + '</span><span class="edit-sub-btn">修正 →</span>';
+      subItem.addEventListener('click', ((dayNum, subIdx) => () => handleEditDay(dayNum, subIdx))(i + 1, s));
+      list.appendChild(subItem);
+    }
   }
   list.style.display = '';
 }
@@ -1695,35 +1947,142 @@ function handleStartDay() {
 
   state.editMode = false;
   state.editDay = null;
+  state.editSubQ = null;
 
   const day = state.currentDay;
-  $('qDayNum').textContent = day;
-  $('qDaySub').textContent = DAY_TITLES[day - 1];
-  $('qText').textContent = QUESTIONS[day - 1];
-  $('answerText').value = '';
-  $('btnSubmit').disabled = false;
-  $('btnSubmit').textContent = '送信する';
+  const dayIdx = day - 1;
+  const dayQuestions = QUESTIONS[dayIdx];
+  const daySubAnswers = state.subAnswers[dayIdx] || [];
 
+  state.totalSubQ = dayQuestions.length;
+
+  // Find the first unanswered sub-question
+  let startSubQ = 0;
+  for (let s = 0; s < dayQuestions.length; s++) {
+    if (!daySubAnswers[s]) { startSubQ = s; break; }
+  }
+  state.currentSubQ = startSubQ;
+
+  showQuestionScreen(day, state.currentSubQ);
   showScreen('screen-question', true);
 
   setTimeout(() => $('answerText').focus(), 800);
 }
 
+// ===== SHOW QUESTION SCREEN (for a specific sub-question) =====
+function showQuestionScreen(day, subIdx) {
+  const dayIdx = day - 1;
+  const dayQuestions = QUESTIONS[dayIdx];
+  const totalQ = dayQuestions.length;
+
+  $('qDayNum').textContent = day;
+  $('qDaySub').textContent = DAY_TITLES[dayIdx] + '（質問 ' + (subIdx + 1) + ' / ' + totalQ + '）';
+  $('qText').textContent = dayQuestions[subIdx];
+  $('answerText').value = '';
+  $('btnSubmit').disabled = false;
+
+  // Button text: last sub-question shows "送信する", others show "次へ"
+  if (state.editMode) {
+    $('btnSubmit').textContent = '修正する';
+  } else if (subIdx === totalQ - 1) {
+    $('btnSubmit').textContent = '送信する';
+  } else {
+    $('btnSubmit').textContent = '次へ';
+  }
+}
+
+// ===== TRANSITION TO NEXT SUB-QUESTION (fade animation, no full screen transition) =====
+function transitionToNextSubQ(day, subIdx) {
+  const card = document.querySelector('.question-card');
+  const area = document.querySelector('.answer-area');
+
+  // Fade out
+  card.classList.add('sub-fade-out');
+  area.classList.add('sub-fade-out');
+
+  setTimeout(() => {
+    // Update content
+    showQuestionScreen(day, subIdx);
+
+    // Fade in
+    card.classList.remove('sub-fade-out');
+    card.classList.add('sub-fade-in');
+    area.classList.remove('sub-fade-out');
+    area.classList.add('sub-fade-in');
+
+    setTimeout(() => {
+      card.classList.remove('sub-fade-in');
+      area.classList.remove('sub-fade-in');
+      $('answerText').focus();
+    }, 400);
+  }, 300);
+}
+
 // ===== EDIT DAY（回答修正）=====
-function handleEditDay(dayNum) {
+function handleEditDay(dayNum, subIdx) {
+  // If no subIdx provided, show the edit list for this day's sub-questions
+  if (subIdx === undefined || subIdx === null) {
+    // Show sub-question list for this day in the edit panel
+    const list = $('editDayList');
+    list.innerHTML = '';
+
+    const dayQuestions = QUESTIONS[dayNum - 1];
+    const daySubAnswers = state.subAnswers[dayNum - 1] || [];
+
+    // Day header
+    const header = document.createElement('div');
+    header.className = 'edit-day-item';
+    header.style.cursor = 'default';
+    header.style.borderColor = 'rgba(90, 155, 181, 0.2)';
+    header.innerHTML = '<span class="edit-day-name" style="font-weight:600;">' + DAY_TITLES[dayNum - 1] + '</span><span class="edit-day-btn" style="cursor:pointer;" id="editBackBtn">← 戻る</span>';
+    list.appendChild(header);
+
+    // Back button handler
+    setTimeout(() => {
+      const backBtn = document.getElementById('editBackBtn');
+      if (backBtn) backBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleEditList(); toggleEditList(); });
+    }, 0);
+
+    for (let s = 0; s < dayQuestions.length; s++) {
+      if (!daySubAnswers[s]) continue;
+      const subItem = document.createElement('div');
+      subItem.className = 'edit-sub-item';
+      const qPreview = dayQuestions[s].replace(/\n/g, ' ').substring(0, 50);
+      subItem.innerHTML = '<span class="edit-sub-q">Q' + (s + 1) + '. ' + qPreview + (dayQuestions[s].length > 50 ? '...' : '') + '</span><span class="edit-sub-btn">修正 →</span>';
+      subItem.addEventListener('click', ((dn, si) => () => handleEditDay(dn, si))(dayNum, s));
+      list.appendChild(subItem);
+    }
+    list.style.display = '';
+    return;
+  }
+
+  // Edit a specific sub-question
   state.editMode = true;
   state.editDay = dayNum;
+  state.editSubQ = subIdx;
+
+  const dayQuestions = QUESTIONS[dayNum - 1];
+  const totalQ = dayQuestions.length;
 
   $('qDayNum').textContent = dayNum;
-  $('qDaySub').textContent = DAY_TITLES[dayNum - 1] + '（修正）';
-  $('qText').textContent = QUESTIONS[dayNum - 1];
-  $('answerText').value = state.answers[dayNum - 1] || '';
+  $('qDaySub').textContent = DAY_TITLES[dayNum - 1] + '（質問 ' + (subIdx + 1) + ' / ' + totalQ + ' — 修正）';
+  $('qText').textContent = dayQuestions[subIdx];
+  $('answerText').value = (state.subAnswers[dayNum - 1] && state.subAnswers[dayNum - 1][subIdx]) || '';
   $('btnSubmit').disabled = false;
   $('btnSubmit').textContent = '修正する';
 
   showScreen('screen-question', true);
 
   setTimeout(() => $('answerText').focus(), 800);
+}
+
+// ===== SHOW SUCCESS TOAST (for between sub-questions) =====
+function showSuccessToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('success');
+  t.classList.add('show');
+  setTimeout(() => { t.classList.remove('show'); t.classList.remove('success'); }, 1500);
 }
 
 // ===== SUBMIT ANSWER =====
@@ -1740,18 +2099,25 @@ async function handleSubmit() {
 
   const isEdit = state.editMode;
   const targetDay = isEdit ? state.editDay : state.currentDay;
+  const targetSub = isEdit ? state.editSubQ : state.currentSubQ;
+  const dayIdx = targetDay - 1;
+  const totalQ = QUESTIONS[dayIdx].length;
+  const isLastSubQ = (targetSub === totalQ - 1);
 
   $('btnSubmit').disabled = true;
   $('btnSubmit').textContent = isEdit ? '修正中...' : '送信中...';
 
-  // 送信アニメーション表示
-  showScreen('screen-sending', true);
+  // Only show sending animation for last sub-question of a day (or edit mode)
+  if (isLastSubQ || isEdit) {
+    showScreen('screen-sending', true);
+  }
 
   const action = isEdit ? 'update' : 'submit';
   const result = await apiCall(action, {
     name: state.name,
     pin: state.pin,
     day: targetDay,
+    sub: targetSub,
     answer: answer
   });
 
@@ -1766,28 +2132,40 @@ async function handleSubmit() {
     return;
   }
 
-  // 最小2.5秒は送信アニメーション表示
-  await new Promise(r => setTimeout(r, 2500));
+  // Save answer in local state
+  if (!state.subAnswers[dayIdx]) {
+    state.subAnswers[dayIdx] = new Array(totalQ).fill(null);
+  }
+  state.subAnswers[dayIdx][targetSub] = answer;
 
   if (isEdit) {
-    // 修正完了 → ダッシュボードに戻る
-    state.answers[targetDay - 1] = answer;
+    // Wait for sending animation
+    await new Promise(r => setTimeout(r, 2500));
+
+    // 修正完了 → done screen
     state.editMode = false;
     state.editDay = null;
-    $('doneTitle').textContent = DAY_TITLES[targetDay - 1] + ' — 修正完了';
+    state.editSubQ = null;
+    $('doneTitle').textContent = DAY_TITLES[dayIdx] + ' — 修正完了';
     $('doneMessage').textContent = '回答を修正しました。';
     showScreen('screen-day-done', true);
+  } else if (!isLastSubQ) {
+    // NOT the last sub-question: show toast and transition to next sub-question
+    showSuccessToast('受け取りました');
+    state.currentSubQ = targetSub + 1;
+    transitionToNextSubQ(targetDay, state.currentSubQ);
   } else {
-    // 通常送信
-    state.progress[state.currentDay - 1] = true;
-    state.answers[state.currentDay - 1] = answer;
+    // LAST sub-question of the day: show sending animation → day done
+    await new Promise(r => setTimeout(r, 2500));
+
+    state.progress[dayIdx] = true;
     const day = state.currentDay;
 
     if (day === 7) {
       showScreen('screen-final', true);
     } else {
-      $('doneTitle').textContent = DAY_TITLES[day - 1] + ' — 完了';
-      $('doneMessage').textContent = DONE_MESSAGES[day - 1];
+      $('doneTitle').textContent = DAY_TITLES[dayIdx] + ' — 完了';
+      $('doneMessage').textContent = DONE_MESSAGES[dayIdx];
       state.currentDay = day + 1;
       showScreen('screen-day-done', true);
     }

@@ -15,6 +15,11 @@
 //   2. このコードを貼り付け
 //   3. REG.NAME_COL / REG.PIN_COL をシート1の列に合わせる
 //   4. デプロイ → ウェブアプリ → 全員アクセス可
+//
+// 回答データ形式:
+//   各Day の回答セルには JSON 配列で保存される
+//   例: ["回答1","回答2","回答3",...]
+//   レガシー（プレーンテキスト）の場合は ["テキスト"] に変換して読み取る
 // ============================================================
 
 
@@ -87,18 +92,142 @@ function getNextUnlockTime(completedTimestamp) {
 
 
 // ============================================================
-// 7日間の質問
+// 7日間の質問（2D配列: 各日に複数のサブ質問）
 // ============================================================
 
 const DAILY_QUESTIONS = [
-  '今、あなたの心の中で一番重たいものは何ですか？ 誰にも見せなくていい場所です。ここに、そのまま置いてください。',
-  'あなたが "本当はこうしたかった" と思っていることは何ですか？ 誰かのためではなく、あなた自身の声を聞かせてください。',
-  'もし過去の自分に一つだけ伝えられるとしたら、何と言いますか？',
-  'あなたが無意識に蓋をしている感情はありますか？ 怒り、悲しみ、寂しさ... どんなものでも構いません。',
-  'あなたが手放したいのに、まだ握りしめているものは何ですか？',
-  '今のあなたが、一番欲しい言葉は何ですか？ 自分自身にかけてあげたい言葉を書いてください。',
-  '7日間を終えた今、あなたの心の器には何が見えますか？ 空っぽになった器に、これから何を入れていきたいですか？',
+  // --- Day 1 (7 questions) - 過去の浄化 ---
+  [
+    'あなたが今も引きずっている「過去」は何ですか?\n人間関係(元カレ、元カノ、友人、家族、職場の人)?\nお金(借金、浪費、投資の失敗)?\n仕事(転職、退職、失業)?\n健康(病気、妊娠、流産)?\nそれとも、他の何か?\n思いつく限り、全て書いてください。',
+    'その「過去」を思い出すと、どんな感情が湧いてきますか?\n寂しい? 悲しい? 悔しい? 腹が立つ? 不安? 恐怖?\n全ての感情を、正直に書いてください。',
+    '「あの時、こうしていれば...」\nそう後悔していることを、全て書き出してください。\n人間関係、お金、仕事、健康、何でも構いません。\n思いつく限り、全て書いてください。',
+    '過去の失敗や選択で、今も自分を責めていることはありますか?\n「あの時の私が馬鹿だった」\n「なんであんな選択したんだろう」\n「私のせいで...」\nその時の気持ちを、全て書き出してください。',
+    'もし過去に戻れるなら、あなたは何をしますか?\n人間関係をやり直す? お金の使い方を変える?\n違う仕事を選ぶ? 健康にもっと気を使う?\n具体的に書いてください。',
+    'その「過去」のせいで、あなたは何を失ったと感じていますか?\n人? お金? 時間? 健康? チャンス? 幸せ?\n正直に書いてください。',
+    'でも、現実には過去には戻れません。\nそれを理解した上で、今のあなたは何を感じますか?\n諦め? 悲しみ? それとも、もう前を向きたい?\n正直な気持ちを書いてください。',
+  ],
+
+  // --- Day 2 (7 questions) - 過去の振り返り・手放し ---
+  [
+    '昨日過去を書き出した後、何か変化はありましたか?\n夜、よく眠れましたか?\n朝、目覚めた時、何か違いを感じましたか?\n小さなことでもいいので、気づいたことを書いてください。',
+    '昨日書き出した「過去」のことを、今どう思いますか?\nまだ引きずってる? 少し楽になった? まだモヤモヤしてる?\n正直な気持ちを書いてください。',
+    'その「過去」から、あなたは何を得ましたか?\n「何も得ていない」と思うかもしれません。\nでも、本当に何もないですか?\n学び? 経験? 強さ?\nそれとも、何もない?\n正直に書いてください。',
+    'もし、過去のあなた(5年前のあなた)が、今のあなたの目の前に現れたら、あなたは何と声をかけますか?\n「その選択は間違ってるよ」?\n「そのままでいいよ」?\n「もっとこうしたほうがいいよ」?\n過去の自分に、メッセージを送ってください。',
+    'あなたは、いつまで過去に囚われていたいですか?\n正直に答えてください。\nまだしばらく引きずっていたい?\nそれとも、今すぐ手放したい?',
+    '「過去を手放す」と決めた時、何が怖いですか?\n思い出がなくなること?\nあの人を完全に忘れてしまうこと?\n新しい一歩を踏み出すこと?\nまた同じ失敗をすること?\n正直な気持ちを書いてください。',
+    'もし、今日で過去を完全に手放せるとしたら、あなたは手放しますか?\nそれとも、まだ持っていたいですか?\n正直に答えてください。',
+  ],
+
+  // --- Day 3 (8 questions) - 怒り・許せないこと ---
+  [
+    'あなたが今も許せない人・出来事は何ですか?\n人(家族、恋人、友人、上司、同僚)?\n会社(ブラック企業、不当な扱い)?\n社会(不公平、理不尽)?\n自分の身体(病気、妊娠できない、太っている)?\nお金(貧乏、借金、詐欺)?\n思いつく限り、全て書いてください。',
+    'その人・出来事に、何をされましたか?\nまたは、何が起きましたか?\n具体的に書いてください。\n思い出すだけで腹が立つかもしれません。\nでも、全て書き出してください。',
+    'それを思い出すと、どんな感情が湧いてきますか?\n怒り? 憎しみ? 悲しみ? 悔しさ? 無力感?\n全ての感情を、正直に書いてください。',
+    'もし、その人が今あなたの目の前にいたら、あなたは何と言いたいですか?\n遠慮なく、思いつく限り、全て書いてください。\n汚い言葉でも構いません。\n誰も見ていません。',
+    '「あの人のせいで、私の人生は...」\n「あの出来事のせいで、私は...」\nそう思ってしまうことはありますか?\nある場合、具体的に何を失ったと感じていますか?',
+    '「なんで私ばっかり...」\nそう思ったことはありますか?\nある場合、その時の気持ちを全て書いてください。',
+    '復讐したいと思ったことはありますか?\n正直に答えてください。\nある場合、どんな復讐を考えましたか?',
+    'でも、復讐しても、あなたの心は満たされないかもしれません。\nそれでも、あなたは復讐したいですか?\nそれとも、もう手放したいですか?\n正直な気持ちを書いてください。',
+  ],
+
+  // --- Day 4 (7 questions) - 怒りの振り返り・手放し ---
+  [
+    '昨日、怒りを書き出した後、何か変化はありましたか?\n少し楽になった? まだモヤモヤしてる?\n正直な気持ちを書いてください。',
+    '昨日書き出した人・出来事のことを、今どう思いますか?\nまだ許せない? 少し許せるようになった? どうでもよくなった?\n正直に書いてください。',
+    '「なんで私ばっかり...」\nそう思ったことはありますか?\nある場合、その時の気持ちを全て書き出してください。',
+    'あなたが怒りを感じる時、本当はどうしてほしかったんですか?\n謝ってほしかった? 認めてほしかった?\n助けてほしかった? 理解してほしかった?\n本当の気持ちを書いてください。',
+    'もし、あなたが許せない人が、今あなたの目の前に現れて、「本当にごめん」と謝ってきたら、あなたはどうしますか?\n許せる? 許せない?\n正直な気持ちを書いてください。',
+    'その人を許すことで、あなたは何を失いますか?\n怒る理由? 被害者でいられること?\nそれとも、何も失わない?\n正直に書いてください。',
+    'もし、今日でその怒りを完全に手放せるとしたら、あなたは手放しますか?\nそれとも、まだ持っていたいですか?\n正直に答えてください。',
+  ],
+
+  // --- Day 5 (7 questions) - 自己否定 ---
+  [
+    '「私なんて...」\n普段、そう思ってしまうことはありますか?\nどんな時に、そう思いますか?\n全て書き出してください。',
+    '自分のどこが嫌いですか?\n自分のどこが許せないですか?\n容姿、性格、過去の行動...\n全て、書き出してください。',
+    '「どうせ私には無理」\n「私には価値がない」\nそう思ってしまう瞬間はありますか?\nその時の気持ちを、全て書いてください。',
+    '他人と自分を比べて、落ち込むことはありますか?\n「あの人はできるのに、私は...」\n「みんなは幸せなのに、私は...」\nその時の気持ちを、全て書いてください。',
+    '自分を責める時、あなたは自分に何と言っていますか?\n「馬鹿」「ダメ人間」「クズ」\n思いつく限り、全て書いてください。',
+    'もし、あなたの大切な友人が、今あなたが書いたような自己否定をしていたら、あなたは何と声をかけますか?',
+    'もし、今日でその自己否定を完全に手放せるとしたら、あなたは手放しますか?\nそれとも、まだ持っていたいですか?\n正直に答えてください。',
+  ],
+
+  // --- Day 6 (7 questions) - 未来・前向き ---
+  [
+    '5日間、ネガティブな感情を吐き出してきました。\n今、どんな気持ちですか?\n心は軽くなりましたか?\n正直な気持ちを書いてください。',
+    '今、あなたの心の中に、どんな感情がありますか?\nスッキリ? ワクワク? それとも、まだモヤモヤ?\n正直に書いてください。',
+    'あなたは、本当はどんな気持ちで毎日を過ごしたいですか?\n幸せ? 安心? ワクワク? 穏やか?\n素直な気持ちを書いてください。',
+    'あなたは、本当はどんな自分になりたいですか?\n自信がある自分? 優しい自分? 強い自分? 自由な自分?\n素直に書いてください。',
+    'もし、1年後、あなたの願いが全て叶っているとしたら、どんな生活をしていますか?\n朝起きて、何をしていますか?\n誰といますか? どんな気持ちですか?\n具体的に想像して、書いてください。',
+    'その未来を想像した時、どんな感情が湧いてきましたか?\nワクワクした? 嬉しい?\nそれとも、「無理かも...」と思った?\n正直に書いてください。',
+    'その未来を手に入れるために、今日から何を始めますか?\n小さなことでもいいです。\n一つだけ、書いてください。',
+  ],
+
+  // --- Day 7 (6 questions) - 7日間の振り返り ---
+  [
+    '7日間を振り返って、どうでしたか?\n心は軽くなりましたか?\n何か気づいたことはありましたか?\n感想を自由に書いてください。',
+    '7日前のあなたと、今のあなたを比べてみてください。\n何が変わりましたか?\n心? 気持ち? 考え方?\n気づいたことを、全て書いてください。',
+    'これから、あなたは何をしたいですか?\n挑戦したいこと、始めたいこと、やめたいこと。\n全て書いてください。',
+    '2026年、あなたはどんな年にしたいですか?\nどんな自分になっていたいですか?\n何を手に入れていたいですか?\n自由に書いてください。',
+    '1年後の自分に、メッセージを送ってください。\n「1年後の私へ」\nどんな言葉を贈りますか?',
+    '今のあなたに、一言メッセージを送るとしたら、何と言いますか?\n自分を褒めてください。\n自分を励ましてください。',
+  ],
 ];
+
+
+// ============================================================
+// 質問数ヘルパー
+// ============================================================
+
+function getQuestionCount(dayNum) {
+  return DAILY_QUESTIONS[dayNum - 1].length;
+}
+
+
+// ============================================================
+// 回答JSON パース/シリアライズ ヘルパー
+// ============================================================
+
+/**
+ * セルの値を回答配列として安全にパースする
+ * - 空 → []
+ * - JSON配列文字列 → パース結果
+ * - レガシープレーンテキスト → [value]
+ */
+function parseAnswersJson(cellValue) {
+  if (!cellValue || cellValue === '') return [];
+  var str = String(cellValue).trim();
+  if (str === '') return [];
+  if (str.charAt(0) === '[') {
+    try {
+      var parsed = JSON.parse(str);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (e) {
+      // パース失敗 → レガシーとして扱う
+    }
+  }
+  // レガシープレーンテキスト
+  return [str];
+}
+
+/**
+ * 回答配列をJSON文字列にシリアライズする
+ */
+function serializeAnswers(answersArray) {
+  return JSON.stringify(answersArray);
+}
+
+/**
+ * 指定日のサブ質問が全て回答済みかチェック
+ */
+function isDayFullyComplete(answersArray, dayNum) {
+  var total = getQuestionCount(dayNum);
+  if (answersArray.length < total) return false;
+  for (var i = 0; i < total; i++) {
+    if (!answersArray[i] || String(answersArray[i]).trim() === '') return false;
+  }
+  return true;
+}
 
 
 // ============================================================
@@ -314,14 +443,17 @@ function handleRegister(body) {
 
 // ============================================================
 // submit - 回答送信（シート1でPIN照合→シート2に保存）
+// サブ質問対応版: body.sub (0-indexed) で個別サブ質問に回答
 // ============================================================
 
 function handleSubmit(body) {
   var name = (body.name || '').trim();
   var pin = body.pin || '';
   var day = parseInt(body.day, 10);
+  var sub = parseInt(body.sub, 10);
   var answer = body.answer;
 
+  // --- バリデーション ---
   if (!name) {
     return createErrorResponse('名前が必要です。', 'MISSING_NAME');
   }
@@ -331,17 +463,20 @@ function handleSubmit(body) {
   if (!day || day < 1 || day > 7) {
     return createErrorResponse('day は 1〜7 の数値で指定してください。', 'INVALID_DAY');
   }
+  if (isNaN(sub) || sub < 0 || sub >= getQuestionCount(day)) {
+    return createErrorResponse('sub は 0〜' + (getQuestionCount(day) - 1) + ' の数値で指定してください。', 'INVALID_SUB');
+  }
   if (!answer || answer.trim() === '') {
     return createErrorResponse('回答が空です。あなたの心の声を聞かせてください。', 'EMPTY_ANSWER');
   }
 
-  // シート1でPIN照合
+  // --- シート1でPIN照合 ---
   var regSheet = getRegSheet();
   if (!verifyPin(regSheet, name, pin)) {
     return createErrorResponse('認証に失敗しました。', 'AUTH_FAILED');
   }
 
-  // シート2で進捗管理
+  // --- シート2で進捗管理 ---
   var progSheet = getProgSheet();
   var row = findProgRowByName(progSheet, name);
 
@@ -351,20 +486,21 @@ function handleSubmit(body) {
     row = findProgRowByName(progSheet, name);
   }
 
-  // 完了済みチェック
+  // --- 完了済みチェック ---
   var completedVal = progSheet.getRange(row, PCOL.COMPLETED).getValue();
   if (completedVal === true || completedVal === 'TRUE') {
     return createErrorResponse('すでに7日間のプログラムを完了しています。', 'ALREADY_COMPLETED');
   }
 
-  // Day順序チェック
+  // --- Day順序チェック: 前のDayが全て完了しているか ---
   if (day > 1) {
-    var prevAnswer = progSheet.getRange(row, dayAnswerCol(day - 1)).getValue();
-    if (!prevAnswer || prevAnswer === '') {
+    var prevCellValue = progSheet.getRange(row, dayAnswerCol(day - 1)).getValue();
+    var prevAnswers = parseAnswersJson(prevCellValue);
+    if (!isDayFullyComplete(prevAnswers, day - 1)) {
       return createErrorResponse('Day ' + (day - 1) + ' がまだ完了していません。順番に進めてください。', 'DAY_LOCKED');
     }
 
-    // 21:00リセットチェック
+    // 21:00リセットチェック（前日が完了している場合のみ）
     var prevTimestamp = progSheet.getRange(row, dayTimestampCol(day - 1)).getValue();
     if (prevTimestamp) {
       var now = new Date();
@@ -376,20 +512,45 @@ function handleSubmit(body) {
     }
   }
 
-  // 回答済みチェック
-  var existing = progSheet.getRange(row, dayAnswerCol(day)).getValue();
-  if (existing && existing !== '') {
-    return createErrorResponse('Day ' + day + ' はすでに回答済みです。', 'ALREADY_ANSWERED');
+  // --- 現在の回答JSONを読み込み ---
+  var currentCellValue = progSheet.getRange(row, dayAnswerCol(day)).getValue();
+  var currentAnswers = parseAnswersJson(currentCellValue);
+
+  // --- このサブ質問が回答済みかチェック ---
+  if (currentAnswers[sub] && String(currentAnswers[sub]).trim() !== '') {
+    return createErrorResponse('Day ' + day + ' の質問 ' + (sub + 1) + ' はすでに回答済みです。', 'ALREADY_ANSWERED');
   }
 
-  // 回答保存
+  // --- サブ質問の順序チェック: 前のサブ質問が回答済みか ---
+  if (sub > 0) {
+    for (var s = 0; s < sub; s++) {
+      if (!currentAnswers[s] || String(currentAnswers[s]).trim() === '') {
+        return createErrorResponse('質問 ' + (s + 1) + ' がまだ回答されていません。順番に進めてください。', 'SUB_LOCKED');
+      }
+    }
+  }
+
+  // --- 配列を必要なサイズに拡張 ---
+  while (currentAnswers.length <= sub) {
+    currentAnswers.push(null);
+  }
+
+  // --- 回答を設定 ---
+  currentAnswers[sub] = answer.trim();
+
+  // --- JSONとしてセルに書き込み ---
+  progSheet.getRange(row, dayAnswerCol(day)).setValue(serializeAnswers(currentAnswers));
+
+  // --- タイムスタンプ更新 ---
   var now = new Date();
   var nowStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
-  progSheet.getRange(row, dayAnswerCol(day)).setValue(answer.trim());
   progSheet.getRange(row, dayTimestampCol(day)).setValue(nowStr);
 
-  // Day7完了
-  if (day === 7) {
+  // --- Day完了チェック（全サブ質問が回答済みか） ---
+  var dayComplete = isDayFullyComplete(currentAnswers, day);
+
+  if (dayComplete && day === 7) {
+    // 全プログラム完了
     progSheet.getRange(row, PCOL.COMPLETED).setValue(true);
     progSheet.getRange(row, PCOL.COMPLETED_AT).setValue(nowStr);
 
@@ -402,35 +563,64 @@ function handleSubmit(body) {
     return createSuccessResponse({
       message: '7日間の浄化プログラム、おめでとうございます。',
       day: day,
+      sub: sub,
+      is_day_complete: true,
       is_complete: true,
       completed_at: nowStr,
     });
   }
 
+  if (dayComplete) {
+    // このDayの全サブ質問完了 → 次のDayへ
+    Logger.log('Day ' + day + ' 完了: ' + name);
+
+    return createSuccessResponse({
+      message: 'Day ' + day + ' の全ての質問に回答しました。',
+      day: day,
+      sub: sub,
+      is_day_complete: true,
+      is_complete: false,
+      saved_at: nowStr,
+      next_day: day + 1,
+      next_day_questions: DAILY_QUESTIONS[day],  // 次のDayの質問配列
+    });
+  }
+
+  // このDayのサブ質問がまだ残っている
+  var nextSub = sub + 1;
   return createSuccessResponse({
-    message: 'Day ' + day + ' の回答を受け取りました。',
+    message: 'Day ' + day + ' の質問 ' + (sub + 1) + ' の回答を受け取りました。',
     day: day,
-    saved_at: nowStr,
+    sub: sub,
+    is_day_complete: false,
     is_complete: false,
-    next_day: day + 1,
-    next_question: DAILY_QUESTIONS[day],
+    saved_at: nowStr,
+    next_sub: nextSub,
+    next_question: DAILY_QUESTIONS[day - 1][nextSub],
+    sub_completed: sub + 1,
+    total_sub_questions: getQuestionCount(day),
   });
 }
 
 
 // ============================================================
 // update - 回答修正（既存の回答を上書き）
+// サブ質問対応版: body.sub (0-indexed) で個別サブ質問を修正
 // ============================================================
 
 function handleUpdate(body) {
   var name = (body.name || '').trim();
   var pin = body.pin || '';
   var day = parseInt(body.day, 10);
+  var sub = parseInt(body.sub, 10);
   var answer = body.answer;
 
   if (!name) return createErrorResponse('名前が必要です。', 'MISSING_NAME');
   if (!pin) return createErrorResponse('暗証番号が必要です。', 'MISSING_PIN');
   if (!day || day < 1 || day > 7) return createErrorResponse('day は 1〜7 の数値で指定してください。', 'INVALID_DAY');
+  if (isNaN(sub) || sub < 0 || sub >= getQuestionCount(day)) {
+    return createErrorResponse('sub は 0〜' + (getQuestionCount(day) - 1) + ' の数値で指定してください。', 'INVALID_SUB');
+  }
   if (!answer || answer.trim() === '') return createErrorResponse('回答が空です。', 'EMPTY_ANSWER');
 
   // シート1でPIN照合
@@ -444,23 +634,30 @@ function handleUpdate(body) {
   var row = findProgRowByName(progSheet, name);
   if (!row) return createErrorResponse('進捗データがありません。', 'NO_PROGRESS');
 
-  // 回答済みチェック（未回答のDayは修正できない）
-  var existing = progSheet.getRange(row, dayAnswerCol(day)).getValue();
-  if (!existing || existing === '') {
-    return createErrorResponse('Day ' + day + ' はまだ回答していません。', 'NOT_ANSWERED');
+  // 現在の回答JSONを読み込み
+  var currentCellValue = progSheet.getRange(row, dayAnswerCol(day)).getValue();
+  var currentAnswers = parseAnswersJson(currentCellValue);
+
+  // 該当サブ質問が回答済みかチェック（未回答のサブ質問は修正できない）
+  if (!currentAnswers[sub] || String(currentAnswers[sub]).trim() === '') {
+    return createErrorResponse('Day ' + day + ' の質問 ' + (sub + 1) + ' はまだ回答していません。', 'NOT_ANSWERED');
   }
 
   // 回答上書き
+  currentAnswers[sub] = answer.trim();
+  progSheet.getRange(row, dayAnswerCol(day)).setValue(serializeAnswers(currentAnswers));
+
+  // タイムスタンプ更新
   var now = new Date();
   var nowStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
-  progSheet.getRange(row, dayAnswerCol(day)).setValue(answer.trim());
   progSheet.getRange(row, dayTimestampCol(day)).setValue(nowStr + ' (修正)');
 
-  Logger.log('回答修正: ' + name + ' Day' + day);
+  Logger.log('回答修正: ' + name + ' Day' + day + ' Q' + (sub + 1));
 
   return createSuccessResponse({
-    message: 'Day ' + day + ' の回答を修正しました。',
+    message: 'Day ' + day + ' の質問 ' + (sub + 1) + ' の回答を修正しました。',
     day: day,
+    sub: sub,
     saved_at: nowStr,
   });
 }
@@ -496,12 +693,14 @@ function handleGetStats() {
   data.forEach(function(row) {
     if (row[PCOL.COMPLETED - 1] === true || row[PCOL.COMPLETED - 1] === 'TRUE') completed++;
     for (var d = 1; d <= 7; d++) {
-      var ans = row[dayAnswerCol(d) - 1];
+      var cellVal = row[dayAnswerCol(d) - 1];
       var ts = row[dayTimestampCol(d) - 1];
-      if (ans && ans !== '') {
+      var answers = parseAnswersJson(cellVal);
+      if (isDayFullyComplete(answers, d)) {
         dayBreakdown['day' + d]++;
         if (ts) {
-          var subDate = Utilities.formatDate(new Date(ts), CONFIG.TIMEZONE, 'yyyy-MM-dd');
+          var tsStr = String(ts).replace(' (修正)', '');
+          var subDate = Utilities.formatDate(new Date(tsStr), CONFIG.TIMEZONE, 'yyyy-MM-dd');
           if (subDate === today) todaySubs++;
         }
       }
@@ -531,7 +730,18 @@ function buildProgressObject(rowData) {
   for (var d = 1; d <= 7; d++) {
     var answerVal = rowData[dayAnswerCol(d) - 1];
     var timestampVal = rowData[dayTimestampCol(d) - 1];
-    var hasAnswer = answerVal && answerVal !== '';
+    var answers = parseAnswersJson(answerVal);
+    var totalSubQuestions = getQuestionCount(d);
+    var subCompleted = 0;
+
+    // サブ質問の回答数をカウント
+    for (var s = 0; s < totalSubQuestions; s++) {
+      if (answers[s] && String(answers[s]).trim() !== '') {
+        subCompleted++;
+      }
+    }
+
+    var dayFullyComplete = isDayFullyComplete(answers, d);
 
     var isUnlocked = false;
     var unlockAt = null;
@@ -540,10 +750,14 @@ function buildProgressObject(rowData) {
     if (d === 1) {
       isUnlocked = true;
     } else {
-      var prevAnswer = rowData[dayAnswerCol(d - 1) - 1];
+      var prevAnswerVal = rowData[dayAnswerCol(d - 1) - 1];
       var prevTimestamp = rowData[dayTimestampCol(d - 1) - 1];
-      if (prevAnswer && prevAnswer !== '' && prevTimestamp) {
-        var unlockTime = getNextUnlockTime(prevTimestamp);
+      var prevAnswers = parseAnswersJson(prevAnswerVal);
+      var prevDayComplete = isDayFullyComplete(prevAnswers, d - 1);
+
+      if (prevDayComplete && prevTimestamp) {
+        var tsStr = String(prevTimestamp).replace(' (修正)', '');
+        var unlockTime = getNextUnlockTime(tsStr);
         if (now.getTime() >= unlockTime.getTime()) {
           isUnlocked = true;
         } else {
@@ -553,19 +767,32 @@ function buildProgressObject(rowData) {
       }
     }
 
-    if (hasAnswer) isUnlocked = true;
+    // 既に回答があればアンロック扱い
+    if (subCompleted > 0) isUnlocked = true;
+
+    // 回答配列を構築（未回答はnull）
+    var answersOutput = [];
+    for (var s = 0; s < totalSubQuestions; s++) {
+      if (answers[s] && String(answers[s]).trim() !== '') {
+        answersOutput.push(answers[s]);
+      } else {
+        answersOutput.push(null);
+      }
+    }
 
     days['day' + d] = {
-      question: DAILY_QUESTIONS[d - 1],
-      answer: hasAnswer ? answerVal : null,
-      answered_at: hasAnswer ? formatDate(timestampVal) : null,
-      is_completed: hasAnswer,
+      questions: DAILY_QUESTIONS[d - 1],
+      answers: answersOutput,
+      answered_at: (subCompleted > 0) ? formatDate(timestampVal) : null,
+      sub_completed: subCompleted,
+      total_sub_questions: totalSubQuestions,
+      is_completed: dayFullyComplete,
       is_unlocked: isUnlocked,
       is_time_locked: isTimeLocked,
       unlock_at: unlockAt,
     };
 
-    if (hasAnswer) {
+    if (dayFullyComplete) {
       daysCompleted++;
       currentDay = d < 7 ? d + 1 : 7;
     }
@@ -585,10 +812,18 @@ function buildProgressObject(rowData) {
 function buildEmptyProgress() {
   var days = {};
   for (var d = 1; d <= 7; d++) {
+    var totalSubQuestions = getQuestionCount(d);
+    var emptyAnswers = [];
+    for (var s = 0; s < totalSubQuestions; s++) {
+      emptyAnswers.push(null);
+    }
+
     days['day' + d] = {
-      question: DAILY_QUESTIONS[d - 1],
-      answer: null,
+      questions: DAILY_QUESTIONS[d - 1],
+      answers: emptyAnswers,
       answered_at: null,
+      sub_completed: 0,
+      total_sub_questions: totalSubQuestions,
       is_completed: false,
       is_unlocked: d === 1,
       is_time_locked: false,
