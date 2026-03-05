@@ -479,7 +479,7 @@ section{position:relative;z-index:1}
   font-size:clamp(4rem,20vw,8rem);
   font-weight:900;
   color:var(--w);
-  letter-spacing:.1em;
+  letter-spacing:.15em;
   line-height:1;
   position:relative;
   display:inline-block;
@@ -502,6 +502,31 @@ section{position:relative;z-index:1}
   50%{opacity:1;text-shadow:0 0 60px rgba(255,255,255,.25),0 0 120px rgba(90,155,181,.15)}
 }
 
+/* 怒 悲 苦 — 毛筆スタイル（復活と同スタイル） */
+.dohiku-section{background:#000;padding:80px 0;text-align:center;position:relative;z-index:1}
+.dohiku-text{
+  font-family:'Shippori Mincho','Zen Old Mincho','HiraMinProN-W6','游明朝','YuMincho',serif;
+  font-size:clamp(4rem,20vw,8rem);
+  font-weight:900;
+  color:#fff;
+  letter-spacing:.2em;
+  line-height:1;
+  position:relative;
+  display:inline-block;
+  text-shadow:
+    0 0 40px rgba(255,255,255,.15),
+    0 0 80px rgba(200,100,80,.1);
+  animation:fukkatsuPulse 4s ease-in-out infinite;
+}
+.dohiku-text::before{
+  content:'怒　悲　苦';
+  position:absolute;
+  inset:0;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(200,100,80,.3);
+  filter:blur(8px);
+  z-index:-1;
+}
 
 
 /* ============================================================
@@ -594,6 +619,425 @@ section{position:relative;z-index:1}
   .resonance-item::before{left:14px}
 }
 
+
+/* ===== VISUAL ENHANCEMENT v5 ===== */
+
+/* キーフレーズ大見出し */
+.key-phrase {
+  font-size: clamp(1.6rem, 6vw, 2.8rem);
+  font-family: var(--serif);
+  line-height: 1.8;
+  text-align: center;
+  letter-spacing: .12em;
+  color: var(--moon);
+  padding: 60px 20px;
+  position: relative;
+}
+.key-phrase em {
+  font-style: normal;
+  color: #d4af6a;
+  text-shadow: 0 0 30px rgba(212,175,106,.4), 0 0 60px rgba(212,175,106,.15);
+}
+.key-phrase::before,
+.key-phrase::after {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(to bottom, transparent, rgba(212,175,106,.4), transparent);
+  margin: 0 auto 20px;
+}
+.key-phrase::after {
+  margin: 20px auto 0;
+}
+
+/* 大きな強調ブロック */
+.big-statement {
+  padding: 80px 24px;
+  text-align: center;
+  position: relative;
+}
+.big-statement .label {
+  font-size: .6rem;
+  letter-spacing: .4em;
+  color: rgba(212,175,106,.5);
+  margin-bottom: 32px;
+  display: block;
+}
+.big-statement .main-text {
+  font-size: clamp(1.1rem, 4.5vw, 1.8rem);
+  font-family: var(--serif);
+  line-height: 2.2;
+  color: var(--moon);
+  letter-spacing: .08em;
+}
+.big-statement .main-text em {
+  font-style: normal;
+  color: #d4af6a;
+  font-size: 1.2em;
+  display: block;
+  margin: 12px 0;
+  text-shadow: 0 0 40px rgba(212,175,106,.5);
+}
+.big-statement .sub-text {
+  font-size: clamp(.82rem, 3vw, .95rem);
+  color: var(--moon6);
+  line-height: 2.4;
+  margin-top: 32px;
+  font-family: var(--sans);
+}
+
+/* 澱みカード（新デザイン） */
+.sediment-block {
+  padding: 60px 0;
+  position: relative;
+}
+.sediment-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 60px 24px;
+  position: relative;
+  border-bottom: 1px solid rgba(90,155,181,.08);
+}
+.sediment-item:last-child { border-bottom: none; }
+.sediment-num {
+  font-size: .55rem;
+  letter-spacing: .5em;
+  color: rgba(212,175,106,.6);
+  margin-bottom: 20px;
+}
+.sediment-title {
+  font-size: clamp(1.1rem, 4vw, 1.5rem);
+  font-family: var(--serif);
+  color: var(--moon);
+  letter-spacing: .08em;
+  margin-bottom: 28px;
+  line-height: 1.8;
+}
+.sediment-title em {
+  font-style: normal;
+  color: #d4af6a;
+  text-shadow: 0 0 20px rgba(212,175,106,.3);
+}
+.sediment-body {
+  font-size: clamp(.82rem, 3vw, .92rem);
+  color: var(--moon6);
+  line-height: 2.5;
+  max-width: 520px;
+  font-family: var(--sans);
+}
+.sediment-body strong {
+  color: var(--moon);
+  font-weight: 600;
+}
+
+/* チェックリスト強化 */
+.resonance-item {
+  border-left: 2px solid rgba(212,175,106,.3) !important;
+  padding-left: 24px !important;
+  margin-bottom: 20px !important;
+  font-size: clamp(.9rem, 3.5vw, 1.05rem) !important;
+  line-height: 2 !important;
+  color: var(--moon) !important;
+  position: relative;
+  transition: border-color .3s, color .3s;
+}
+.resonance-item::before {
+  content: '' !important;
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(212,175,106,.6);
+  box-shadow: 0 0 10px rgba(212,175,106,.4);
+}
+
+/* MIRRORセクション強化 */
+.mirror-conclusion {
+  margin-top: 60px;
+  padding: 50px 24px;
+  border: 1px solid rgba(212,175,106,.15);
+  background: linear-gradient(135deg, rgba(212,175,106,.03), transparent);
+  text-align: center;
+  position: relative;
+}
+.mirror-conclusion::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,106,.5), transparent);
+}
+.mirror-conclusion .mc-lead {
+  font-size: clamp(.85rem, 3vw, .95rem);
+  color: var(--moon6);
+  line-height: 2.4;
+  margin-bottom: 32px;
+  font-family: var(--sans);
+}
+.mirror-conclusion .mc-main {
+  font-size: clamp(1.2rem, 4.5vw, 1.8rem);
+  font-family: var(--serif);
+  color: var(--moon);
+  letter-spacing: .1em;
+  line-height: 2;
+}
+.mirror-conclusion .mc-main em {
+  font-style: normal;
+  color: #d4af6a;
+  text-shadow: 0 0 30px rgba(212,175,106,.4);
+  display: block;
+  font-size: 1.15em;
+  margin: 8px 0;
+}
+.mirror-conclusion .mc-sub {
+  font-size: clamp(.8rem, 3vw, .9rem);
+  color: var(--moon6);
+  line-height: 2.4;
+  margin-top: 28px;
+  font-family: var(--sans);
+}
+
+/* WHY結論ブロック */
+.why-conclusion {
+  margin-top: 60px;
+  padding: 60px 24px;
+  text-align: center;
+  background: linear-gradient(180deg, transparent, rgba(212,175,106,.04), transparent);
+  position: relative;
+}
+.why-conclusion .wc-text {
+  font-size: clamp(1rem, 3.5vw, 1.3rem);
+  font-family: var(--serif);
+  color: var(--moon);
+  line-height: 2.4;
+  letter-spacing: .06em;
+}
+.why-conclusion .wc-text em {
+  font-style: normal;
+  color: #d4af6a;
+  text-shadow: 0 0 30px rgba(212,175,106,.4);
+}
+
+/* セクション間の縦線装飾 */
+.vertical-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 0;
+}
+.vertical-divider::before {
+  content: '';
+  width: 1px;
+  height: 60px;
+  background: linear-gradient(to bottom, transparent, rgba(212,175,106,.3), transparent);
+}
+
+/* intro-quote強化 */
+.intro-quote {
+  font-size: clamp(1.1rem, 4vw, 1.5rem) !important;
+  color: var(--moon) !important;
+  text-shadow: 0 0 20px rgba(212,175,106,.15);
+  border-left: none !important;
+  padding: 40px 20px !important;
+}
+.intro-quote::before {
+  font-size: 4rem !important;
+  opacity: .12 !important;
+}
+
+/* reason-card強化 */
+.reason-card {
+  border: 1px solid rgba(212,175,106,.12) !important;
+  background: linear-gradient(135deg, rgba(212,175,106,.03), transparent) !important;
+  padding: 40px 28px !important;
+  margin-bottom: 28px !important;
+}
+.reason-card h3 {
+  font-size: clamp(1rem, 3.5vw, 1.15rem) !important;
+  color: var(--moon) !important;
+  letter-spacing: .05em;
+  margin-bottom: 20px !important;
+}
+.reason-card::before {
+  background: var(--void) !important;
+  color: rgba(212,175,106,.7) !important;
+  border: 1px solid rgba(212,175,106,.2) !important;
+  font-size: .58rem !important;
+  letter-spacing: .3em !important;
+}
+
+/* ============================================================
+   STORY CARDS — 体験談ストーリー型
+   ============================================================ */
+.story-card {
+  background: rgba(10,12,28,.7);
+  border: 1px solid rgba(90,155,181,.12);
+  border-radius: 4px;
+  padding: 36px 28px;
+  position: relative;
+}
+.story-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212,175,106,.3), transparent);
+}
+.story-header {
+  margin-bottom: 20px;
+}
+.story-tag {
+  font-size: .58rem;
+  letter-spacing: .5em;
+  color: rgba(212,175,106,.6);
+  font-family: var(--sans);
+  font-weight: 300;
+  display: block;
+  margin-bottom: 12px;
+}
+.story-title {
+  font-size: clamp(1rem, 4vw, 1.25rem);
+  font-family: var(--serif);
+  font-weight: 600;
+  color: var(--moon);
+  line-height: 1.9;
+  letter-spacing: .04em;
+}
+.story-body {
+  font-size: clamp(.82rem, 3vw, .9rem);
+  color: var(--moon6);
+  line-height: 2.5;
+  font-family: var(--sans);
+  margin-bottom: 24px;
+}
+.story-img {
+  width: 100%;
+  max-width: 520px;
+  display: block;
+  margin: 0 auto;
+  border-radius: 8px;
+  border: 1px solid rgba(90,155,181,.12);
+  box-shadow: 0 8px 40px rgba(0,0,0,.6);
+}
+.story-result {
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: rgba(212,175,106,.05);
+  border-left: 2px solid rgba(212,175,106,.4);
+  font-size: clamp(.85rem, 3vw, .95rem);
+  color: var(--moon);
+  line-height: 2;
+  font-family: var(--sans);
+}
+.story-result strong {
+  color: var(--goldl);
+  font-weight: 600;
+}
+
+/* ============================================================
+   REPEAT SECTION — リピーターセクション
+   ============================================================ */
+.repeat-section {
+  margin-top: 72px;
+  padding: 48px 28px;
+  border: 1px solid rgba(200,169,110,.15);
+  background: linear-gradient(135deg, rgba(200,169,110,.04), rgba(90,155,181,.03));
+  text-align: center;
+  position: relative;
+}
+.repeat-section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200,169,110,.5), transparent);
+}
+.repeat-label {
+  font-size: .58rem;
+  letter-spacing: .55em;
+  color: rgba(200,169,110,.6);
+  font-family: var(--sans);
+  font-weight: 300;
+  margin-bottom: 16px;
+}
+.repeat-title {
+  font-size: clamp(1.05rem, 4vw, 1.3rem);
+  font-family: var(--serif);
+  font-weight: 600;
+  color: var(--moon);
+  line-height: 2;
+  margin-bottom: 16px;
+  letter-spacing: .04em;
+}
+
+/* ============================================================
+   APP PREVIEW SECTION — 専用ページプレビュー
+   ============================================================ */
+.app-preview-section {
+  margin-top: 72px;
+  padding: 48px 0 0;
+  text-align: center;
+  border-top: 1px solid rgba(90,155,181,.08);
+}
+.app-preview-label {
+  font-size: .58rem;
+  letter-spacing: .55em;
+  color: var(--w);
+  opacity: .65;
+  font-family: var(--sans);
+  font-weight: 300;
+  margin-bottom: 16px;
+}
+.app-preview-title {
+  font-size: clamp(1.05rem, 4vw, 1.3rem);
+  font-family: var(--serif);
+  font-weight: 600;
+  color: var(--moon);
+  line-height: 2;
+  margin-bottom: 16px;
+  letter-spacing: .04em;
+}
+.app-preview-phones {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.app-phone-wrap {
+  flex: 1;
+  min-width: 140px;
+  max-width: 240px;
+}
+.app-phone-img {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(90,155,181,.2);
+  box-shadow:
+    0 20px 60px rgba(0,0,0,.7),
+    0 0 0 1px rgba(90,155,181,.08),
+    0 0 40px rgba(90,155,181,.08);
+  display: block;
+  margin: 0 auto;
+}
+.app-phone-caption {
+  font-size: .72rem;
+  color: var(--moon6);
+  font-family: var(--sans);
+  margin-top: 12px;
+  letter-spacing: .1em;
+}
+
 </style>
 </head>
 <body>
@@ -641,7 +1085,7 @@ section{position:relative;z-index:1}
     そして、空の器で清らかな運気を迎え入れる。
   </p>
 
-  <a href="#purchase" class="cta-btn primary fi fi-d3">浄化の門をくぐる</a>
+  <a href="#purchase" class="cta-btn primary fi fi-d3">禊を受ける</a>
 
   <div class="scroll-hint">
     <span>SCROLL</span>
@@ -703,21 +1147,58 @@ section{position:relative;z-index:1}
       </div>
     </div>
 
-    <div style="margin-top:48px;display:flex;flex-direction:column;gap:40px;text-align:center">
-      <div class="fi">
-        <p class="bt" style="font-size:1.1rem;color:var(--moon);margin-bottom:16px">臨時収入13万円が入り込んできた方であったり</p>
-        <img src="program/images/img_00.jpg" alt="臨時収入13万円の報告" style="width:100%;max-width:520px;display:block;margin:0 auto;border-radius:12px;border:1px solid rgba(142,200,224,0.15);box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(90,155,181,0.2);" loading="lazy"/>
+    <!-- ストーリー型体験談 -->
+    <div style="margin-top:60px;display:flex;flex-direction:column;gap:64px">
+
+      <!-- 体験談①：詐欺被害→臨時収入13万円 -->
+      <div class="story-card fi">
+        <div class="story-header">
+          <span class="story-tag">STORY 01</span>
+          <h3 class="story-title">詐欺被害で心が折れていた私に、<br>13万円の臨時収入が届いた。</h3>
+        </div>
+        <p class="story-body">詐欺に遭い、お金も気力も失っていた時期にプログラムに参加してくださった方から、ご連絡をいただきました。「どうせ何をやっても無駄だ」という思いが心に染みついていたそうですが、7日間が終わった後、ずっと止まっていた流れが動き始めたとのことでした。</p>
+        <img src="program/images/img_00.jpg" alt="臨時収入13万円の報告" class="story-img" loading="lazy"/>
+        <p class="story-result">浄化後、予期せぬ形で<strong>13万円の臨時収入</strong>が入ってきました。</p>
       </div>
-      <div class="fi fi-d1">
-        <p class="bt" style="font-size:1.1rem;color:var(--moon);margin-bottom:16px">たった１ヶ月後に集客数が4倍、5倍になった事業主様</p>
-        <img src="program/images/img_01.jpg" alt="集客数4倍の報告" style="width:100%;max-width:520px;display:block;margin:0 auto;border-radius:12px;border:1px solid rgba(142,200,224,0.15);box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(90,155,181,0.2);" loading="lazy"/>
+
+      <!-- 体験談②：サロンオーナー 1→4→5倍 -->
+      <div class="story-card fi fi-d1">
+        <div class="story-header">
+          <span class="story-tag">STORY 02</span>
+          <h3 class="story-title">月1件だった予約が、<br>翌月4件、その翌月5件になった。</h3>
+        </div>
+        <p class="story-body">サロンを開業して1年、ずっと集客に悩んでいたというオーナーの方から、嬉しいご報告が届きました。月に1件来れば良い方で、廃業も考えていたそうです。プログラムを終えてしばらくして、流れが変わったとご連絡をくださいました。</p>
+        <img src="program/images/story_salon.jpg" alt="サロン集客4倍・5倍の報告" class="story-img" loading="lazy"/>
+        <img src="program/images/img_01.jpg" alt="集客数報告メッセージ" class="story-img" style="margin-top:16px" loading="lazy"/>
+        <p class="story-result">翌月の予約が<strong>4件</strong>、さらに翌月は<strong>5件</strong>に。流れが変わったのを肌で感じました。</p>
       </div>
-      <div class="fi fi-d2">
-        <p class="bt" style="font-size:1.1rem;color:var(--moon);margin-bottom:16px">チケット当選、ご家族様の変化、臨時収入</p>
-        <img src="program/images/img_02.jpg" alt="チケット当選・臨時収入の報告" style="width:100%;max-width:520px;display:block;margin:0 auto;border-radius:12px;border:1px solid rgba(142,200,224,0.15);box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(90,155,181,0.2);" loading="lazy"/>
+
+      <!-- 体験談③：チケット当選・臨時収入 -->
+      <div class="story-card fi fi-d2">
+        <div class="story-header">
+          <span class="story-tag">STORY 03</span>
+          <h3 class="story-title">「当たるわけない」と思っていた<br>チケットが、当選した。</h3>
+        </div>
+        <p class="story-body">「なんとなく毎日が重くて、何をしても空回りしている感覚があった」とおっしゃっていた方から、プログラム後にご連絡をいただきました。7日間が終わった頃には不思議と心が軽くなり、その後、思わぬ変化が起きたとのことでした。</p>
+        <img src="program/images/img_02.jpg" alt="チケット当選・臨時収入の報告" class="story-img" loading="lazy"/>
+        <p class="story-result">応募し続けて一度も当たらなかった<strong>チケットが当選</strong>し、ご家族にも良い変化が起きました。</p>
       </div>
-      <p class="bt fi fi-d3" style="text-align:center;font-size:1.1rem">本当に沢山のお声が届いております。</p>
+
     </div>
+
+    <p class="bt fi fi-d3" style="text-align:center;font-size:1rem;margin-top:48px">本当に沢山のお声が届いております。</p>
+
+    <!-- リピーターセクション -->
+    <div class="repeat-section fi fi-d4">
+      <p class="repeat-label">REPEAT</p>
+      <h3 class="repeat-title">「また受けたい」という声が、<br>後を絶ちません。</h3>
+      <p class="bt" style="text-align:center;font-size:.9rem">一度受けた方が、また戻ってくる。<br>それが、このプログラムの本当の価値だと思っています。</p>
+      <div style="display:flex;flex-direction:column;gap:24px;margin-top:32px">
+        <img src="program/images/repeat_01.jpg" alt="リピーター様のメッセージ1" class="story-img" loading="lazy"/>
+        <img src="program/images/repeat_02.jpg" alt="リピーター様のメッセージ2" class="story-img" loading="lazy"/>
+      </div>
+    </div>
+
   </div>
 </section>
 
@@ -747,20 +1228,80 @@ section{position:relative;z-index:1}
     <img src="program/images/img_03.png" alt="" style="width:100%;max-width:520px;display:block;margin:32px auto;border-radius:12px;border:1px solid rgba(142,200,224,0.12);box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(90,155,181,0.15);" loading="lazy" class="fi fi-d4"/>
 
     <p class="bt fi fi-d4" style="margin-top:32px">
-      ここまで読み進めてくださったということは、あなたは既に理解しているはずです。<br>
-      そして、こう思ったはずです。
+      ここまで読み進めてくださったということは、あなたは既に感じているはずです。<br>
+      「頑張っているのに、なぜか変わらない」という感覚を。
     </p>
 
     <div class="intro-quote fi fi-d5" style="font-size:clamp(.95rem,3vw,1.1rem)">
-      「じゃあ、浄化って具体的にどうすればいいの?」
+      それは、あなたのせいではありません。
     </div>
 
     <p class="bt fi" style="margin-top:32px">
       その答えをお渡しします。<br>
-      私が富裕層専属の開運師として活動する中で作り上げた、<br>
-      <strong>「7日間浄化プログラム」</strong>の全貌を。
+      私が富裕層専属の開運師として活動する中で辿り着いた、<br>
+      <strong>「運気が変わらない、本当の理由」</strong>を。
     </p>
     <img src="program/images/img_04.png" alt="" style="width:100%;max-width:520px;display:block;margin:32px auto;border-radius:12px;border:1px solid rgba(142,200,224,0.12);box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(90,155,181,0.15);" loading="lazy" class="fi fi-d6"/>
+  </div>
+</section>
+
+<hr class="water-rule">
+
+<!-- ============================================================
+     MIRROR — あなたは今、満杯かもしれない
+     ============================================================ -->
+<section class="sec sec-void">
+  <div class="w">
+    <p class="sec-label fi">MIRROR</p>
+    <h2 class="sec-ttl fi fi-d1">あなたは今、<br>満杯かもしれない。</h2>
+
+    <p class="bt fi fi-d2" style="text-align:center">
+      いい縁が来ない。豊かさが入ってこない。<br>
+      頑張っているのに、なぜか空回りしている——
+    </p>
+
+    <div class="key-phrase fi fi-d3">
+      それは、あなたの器が<br>
+      <em>澱みで満杯</em>になっているから<br>
+      かもしれません。
+    </div>
+
+    <p class="bt fi fi-d3" style="text-align:center;font-size:.85rem;color:var(--moon6)">
+      こんな感覚、ありませんか？
+    </p>
+
+    <div class="resonance-list fi fi-d4" style="margin-top:24px;max-width:520px;margin-left:auto;margin-right:auto">
+      <div class="resonance-item fi fi-d4">頑張っているのに、なぜか報われない気がする。</div>
+      <div class="resonance-item fi fi-d5">誰かの幸せを、素直に喜べない自分がいる。</div>
+      <div class="resonance-item fi fi-d5">本当はこんな自分じゃないはず、という感覚がある。</div>
+      <div class="resonance-item fi fi-d5">理由もなく、突然どっと疲れが押し寄せる瞬間がある。</div>
+      <div class="resonance-item fi fi-d5">「私なんて…」という言葉が、口から出やすくなっている。</div>
+      <div class="resonance-item fi fi-d5">何かを始めようとするたびに、見えない重さを感じる。</div>
+      <div class="resonance-item fi fi-d5">ため息が増えた。朝、目が覚めても気持ちが晴れない。</div>
+    </div>
+
+    <div class="mirror-conclusion fi fi-d5">
+      <p class="mc-lead">
+        一つでも当てはまるなら——<br>
+        それは意志の弱さでも、運が悪いわけでもない。
+      </p>
+      <p class="mc-main">
+        あなたの器が、<em>澱みで満杯</em>になっているサインです。
+      </p>
+      <p class="mc-sub">
+        美しい器があります。でも、すでに濁った水でいっぱいです。<br>
+        この状態で、どれだけ清らかな水を注いでも——<br>
+        混ざって、濁るだけ。<br><br>
+        いい縁も、豊かさも、運気も、同じです。<br>
+        器が満杯のまま「受け取ろう」としても、入る余地がない。
+      </p>
+    </div>
+
+    <div class="key-phrase fi fi-d5" style="padding:80px 20px">
+      まず、空にする。<br>
+      <em>それだけで、流れが変わり始める。</em>
+    </div>
+
   </div>
 </section>
 
@@ -859,38 +1400,13 @@ section{position:relative;z-index:1}
         これが、このプログラムの目的です。
       </p>
     </div>
-    <img src="program/images/img_05.png" alt="" style="width:100%;max-width:520px;display:block;margin:32px auto;border-radius:12px;border:1px solid rgba(142,200,224,0.12);box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(90,155,181,0.15);" loading="lazy" class="fi"/>
-    <img src="program/images/img_06.png" alt="" style="width:100%;max-width:520px;display:block;margin:32px auto;border-radius:12px;border:1px solid rgba(142,200,224,0.12);box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(90,155,181,0.15);" loading="lazy" class="fi fi-d1"/>
+    
+    
   </div>
 </section>
 
-
-<hr class="water-rule">
-
-<!-- ============================================================
-     RESONANCE — 最近こんなことを感じていませんか？
-     ============================================================ -->
-<section class="sec sec-void">
-<div class="w">
-<p class="sec-label fi">RESONANCE</p>
-<h2 class="sec-ttl fi fi-d1">最近こんなことを<br>感じていませんか？</h2>
-
-<div class="resonance-list fi fi-d2">
-  <div class="resonance-item fi fi-d2">頑張っているのに、なぜか報われない気がする。</div>
-  <div class="resonance-item fi fi-d3">誰かの幸せを、素直に喜べない自分がいる。</div>
-  <div class="resonance-item fi fi-d3">本当はこんな自分じゃないはず、という感覚がある。</div>
-  <div class="resonance-item fi fi-d4">理由もなく、突然どっと疲れが押し寄せる瞬間がある。</div>
-  <div class="resonance-item fi fi-d4">「私なんて…」という言葉が、口から出やすくなっている。</div>
-  <div class="resonance-item fi fi-d5">何かを始めようとするたびに、見えない重さを感じる。</div>
-  <div class="resonance-item fi fi-d5">ため息が増えた。朝、目が覚めても気持ちが晴れない。</div>
-</div>
-
-<p class="bt fi" style="text-align:center;margin-top:36px">
-もし一つでも当てはまるなら——<br>
-それは、あなたの魂が「もう限界だ」と<br>
-声を上げているサインかもしれません。
-</p>
-</div>
+<section style="background:#000;padding:80px 0;text-align:center">
+  <p class="fukkatsu-text" data-text="怒　悲　苦">怒　悲　苦</p>
 </section>
 
 <hr class="water-rule">
@@ -901,38 +1417,59 @@ section{position:relative;z-index:1}
 <section class="sec sec-mid">
   <div class="w">
     <p class="sec-label fi">WHY IT MATTERS</p>
-    <h2 class="sec-ttl fi fi-d1">なぜ、このプログラムが<br>多くの方に必要とされているのか？</h2>
+    <h2 class="sec-ttl fi fi-d1">空にすれば、<br>運気は自然に流れ込む。</h2>
 
-    <div class="reason-card fi fi-d1" data-num="理由 ①">
-      <h3>器が既に満杯になっている人が多い。</h3>
-      <p>
-        「気持ちがずっと晴れない」「モヤモヤする」「僻みや嫉妬の思いが強い」<br>
-        こういった状態だと、いくら運のいい人と関わっても、器が満杯だといい運気はなかなか受け取ることが難しい。<br><br>
-        <strong>泥水でいっぱいのコップに、美味しい水を注いでも意味がない。<br>
-        だから、まず泥水を捨てる必要があるんです。</strong>
-      </p>
-      <img src="program/images/img_07.png" alt="" style="width:100%;max-width:520px;display:block;margin:32px auto;border-radius:12px;border:1px solid rgba(142,200,224,0.12);box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(90,155,181,0.15);" loading="lazy" class="fi fi-d1"/>
+    <p class="bt fi fi-d2" style="text-align:center">
+      「引き寄せ」より先に、「手放す」が必要な理由があります。<br>
+      あなたの器を満杯にしているのは、<strong>3つの澱み</strong>です。
+    </p>
+
+    <div class="sediment-block fi fi-d3">
+
+      <div class="sediment-item fi fi-d3">
+        <span class="sediment-num">澱み  ０１</span>
+        <h3 class="sediment-title">過去への<em>執着</em>が、<br>器を塞いでいる。</h3>
+        <p class="sediment-body">
+          「あの時こうしていれば…」という後悔。<br>
+          忘れられない人への未練。<br>
+          変えられない過去に縛られ続けること——<br><br>
+          それが今この瞬間の運気を、<strong>静かに塞いでいます。</strong>
+        </p>
+      </div>
+
+      <div class="sediment-item fi fi-d4">
+        <span class="sediment-num">澱み  ０２</span>
+        <h3 class="sediment-title">他者への<em>怒り・恨み</em>が、<br>エネルギーを奪い続ける。</h3>
+        <p class="sediment-body">
+          誰かを恨んでいる時——<br>
+          朝も、仕事中も、夜眠れない夜も、<br>
+          あなたはその人のことを考えている。<br><br>
+          <strong>それは、あなたの貴重なエネルギーを<br>
+          その相手に捧げているのと同じこと。</strong>
+        </p>
+      </div>
+
+      <div class="sediment-item fi fi-d5">
+        <span class="sediment-num">澱み  ０３</span>
+        <h3 class="sediment-title"><em>自己否定</em>が、<br>運気を目の前で素通りさせる。</h3>
+        <p class="sediment-body">
+          「私なんて…」「どうせ私には無理」——<br>
+          この言葉が、宇宙からの運気を<br>
+          あなたの目の前で素通りさせています。<br><br>
+          <strong>受け取る気がない人に、運気は回りません。</strong>
+        </p>
+      </div>
+
     </div>
 
-    <div class="reason-card fi fi-d2" data-num="理由 ②">
-      <h3>魂の器は勝手に溜まっていってしまう。</h3>
-      <p>
-        仕事のストレス、人間関係のストレス、過去の嫌な思い出、悪縁からのネガティブなエネルギー——<br>
-        これら全てが、あなたの器を<strong>無意識下で満杯</strong>にしています。<br><br>
-        「気持ちが落ちやすい」「罪悪感を感じやすい」「いきなり疲れがどっとくる時がある」<br>
-        これらに当てはまる人は、特に魂に詰まりが溜まってしまっている場合が多い。
-      </p>
-    </div>
+    <img src="program/images/img_07.png" alt="" style="width:100%;max-width:520px;display:block;margin:40px auto;border-radius:12px;border:1px solid rgba(142,200,224,0.12);box-shadow:0 8px 40px rgba(0,0,0,0.5),0 0 1px rgba(90,155,181,0.15);" loading="lazy" class="fi fi-d5"/>
 
-    <div class="reason-card fi fi-d3" data-num="理由 ③">
-      <h3>一人で浄化するのは、なかなか難しい。</h3>
-      <p>
-        なぜなら途中で、<strong>自我が邪魔をする</strong>からです。<br><br>
-        魂の声に近づこうとすると、思考が全力でブレーキをかけます。<br>
-        「やっぱり開けないでおこう」「考えすぎだよ」「私は大丈夫、もう過去のことだから」<br><br>
-        溜め込んできた時間が長いほど、層は厚くなっている。<br>
-        「向き合った方がいいのは分かっている。でも、一人では怖い」<br>
-        この声を、本当にたくさんいただいてきました。
+    <div class="why-conclusion fi fi-d5">
+      <p class="wc-text">
+        この澱みを手放した瞬間から、<br>
+        器に空白が生まれる。<br><br>
+        空白ができた器に——<br>
+        <em>運気は、自然に流れ込む。</em>
       </p>
     </div>
 
@@ -1110,13 +1647,30 @@ section{position:relative;z-index:1}
         <h4>第2章：浄化後に取り入れるべき7つの習慣</h4>
         <p>朝一番・寝る前にやるべきこと / 運気を引き寄せる食事 / 直感を信じる練習</p>
       </div>
-      <p class="price-note" style="text-align:center;margin-top:16px">※禊 — 基層には、この特典はありません。</p>
+      <p class="price-note" style="text-align:center;margin-top:16px">※禅 — 基層には、この特典はありません。</p>
     </div>
+
+    <!-- 専用ページプレビュー -->
+    <div class="app-preview-section fi">
+      <p class="app-preview-label">WHAT YOU GET</p>
+      <h3 class="app-preview-title">参加後はこんな専用ページが届きます。</h3>
+      <p class="bt" style="text-align:center;font-size:.9rem">プログラムはすべて、この専用ページ上で進みます。<br>毎日、魂への問いかけが届き、あなたの答えを入力するだけ。</p>
+      <div class="app-preview-phones fi fi-d1">
+        <div class="app-phone-wrap">
+          <img src="program/images/app_login.jpg" alt="専用ページ ログイン画面" class="app-phone-img" loading="lazy"/>
+          <p class="app-phone-caption">専用ページにログイン</p>
+        </div>
+        <div class="app-phone-wrap">
+          <img src="program/images/app_journey.jpg" alt="専用ページ 浄化の旅画面" class="app-phone-img" loading="lazy"/>
+          <p class="app-phone-caption">浄化の旅・毎日のワーク</p>
+        </div>
+      </div>
+      <p class="bt fi fi-d2" style="text-align:center;font-size:.85rem;margin-top:8px">※画像は専用ページのイメージです。実際のページは参加後にご案内します。</p>
+    </div>
+
   </div>
 </section>
-
 <hr class="water-rule">
-
 <!-- ============================================================
      TIMING — なぜ今か
      ============================================================ -->
@@ -1254,7 +1808,7 @@ section{position:relative;z-index:1}
 
     <img src="program/images/img_12.png" alt="浄化の蓮" style="width:100%;max-width:540px;display:block;margin:36px auto;border-radius:14px;border:1px solid rgba(90,155,181,0.15);box-shadow:0 12px 60px rgba(0,0,0,0.7),0 0 1px rgba(90,155,181,0.2);" loading="lazy" class="fi fi-d1"/>
     <div style="margin-top:44px" class="fi fi-d2">
-      <a href="#purchase" class="cta-btn primary">浄化の門をくぐる</a>
+      <a href="#purchase" class="cta-btn primary">禊を受ける</a>
     </div>
 
     <p class="note fi fi-d3">※ 定員に達し次第、募集終了</p>
