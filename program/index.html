@@ -309,6 +309,10 @@ body::after {
 .moon-day.completed {
   border-color: rgba(90, 155, 181, 0.4);
   box-shadow: 0 0 12px rgba(126, 196, 216, 0.15);
+  cursor: pointer;
+}
+.moon-day.completed:hover {
+  box-shadow: 0 0 20px rgba(126, 196, 216, 0.3);
 }
 .moon-day.current {
   border-color: var(--mizu-pale);
@@ -1095,7 +1099,10 @@ let state = {
   progress: [],       // [true, false, false, ...] 各Dayの完了状態
   timeLocked: [],     // [false, false, true, ...] 24h ロック状態
   unlockTimes: [],    // [null, null, '2026-03-06 22:30:00', ...] 解放日時
-  currentDay: 1
+  answers: [],        // [null, null, ...] 各Dayの回答テキスト
+  currentDay: 1,
+  editMode: false,    // 修正モードフラグ
+  editDay: null       // 修正中のDay番号
 };
 let countdownInterval = null;
 
@@ -1398,11 +1405,12 @@ function parseProgress(progressData) {
   state.progress = [false,false,false,false,false,false,false];
   state.timeLocked = [false,false,false,false,false,false,false];
   state.unlockTimes = [null,null,null,null,null,null,null];
+  state.answers = [null,null,null,null,null,null,null];
   state.currentDay = 1;
 
   if (!progressData) return;
 
-  // GAS format: { days: { day1: {is_completed, is_time_locked, unlock_at}, ... }, current_day }
+  // GAS format: { days: { day1: {is_completed, is_time_locked, unlock_at, answer}, ... }, current_day }
   if (progressData.days) {
     for (let d = 1; d <= 7; d++) {
       const dayData = progressData.days['day' + d];
@@ -1410,6 +1418,7 @@ function parseProgress(progressData) {
         state.progress[d - 1] = !!dayData.is_completed;
         state.timeLocked[d - 1] = !!dayData.is_time_locked;
         state.unlockTimes[d - 1] = dayData.unlock_at || null;
+        state.answers[d - 1] = dayData.answer || null;
       }
     }
     state.currentDay = progressData.current_day || 1;
@@ -1508,6 +1517,7 @@ function renderDashboard() {
 
     if (state.progress[i]) {
       day.classList.add('completed');
+      day.addEventListener('click', ((dayNum) => () => handleEditDay(dayNum))(i + 1));
     } else if (state.timeLocked[i]) {
       day.classList.add('time-locked');
     } else if (i + 1 === state.currentDay) {
@@ -1605,6 +1615,9 @@ function handleStartDay() {
     return;
   }
 
+  state.editMode = false;
+  state.editDay = null;
+
   const day = state.currentDay;
   $('qDayNum').textContent = day;
   $('qDaySub').textContent = DAY_TITLES[day - 1];
@@ -1615,7 +1628,23 @@ function handleStartDay() {
 
   showScreen('screen-question', true);
 
-  // テキストエリアにフォーカス（少し遅らせてアニメーション後に）
+  setTimeout(() => $('answerText').focus(), 800);
+}
+
+// ===== EDIT DAY（回答修正）=====
+function handleEditDay(dayNum) {
+  state.editMode = true;
+  state.editDay = dayNum;
+
+  $('qDayNum').textContent = dayNum;
+  $('qDaySub').textContent = DAY_TITLES[dayNum - 1] + '（修正）';
+  $('qText').textContent = QUESTIONS[dayNum - 1];
+  $('answerText').value = state.answers[dayNum - 1] || '';
+  $('btnSubmit').disabled = false;
+  $('btnSubmit').textContent = '修正する';
+
+  showScreen('screen-question', true);
+
   setTimeout(() => $('answerText').focus(), 800);
 }
 
@@ -1631,47 +1660,59 @@ async function handleSubmit() {
     return;
   }
 
+  const isEdit = state.editMode;
+  const targetDay = isEdit ? state.editDay : state.currentDay;
+
   $('btnSubmit').disabled = true;
-  $('btnSubmit').textContent = '送信中...';
+  $('btnSubmit').textContent = isEdit ? '修正中...' : '送信中...';
 
   // 送信アニメーション表示
   showScreen('screen-sending', true);
 
-  const result = await apiCall('submit', {
+  const action = isEdit ? 'update' : 'submit';
+  const result = await apiCall(action, {
     name: state.name,
     pin: state.pin,
-    day: state.currentDay,
+    day: targetDay,
     answer: answer
   });
 
   if (!result.success || result.error) {
     const errMsg = result.code === 'TIME_LOCKED'
       ? result.error
-      : '送信に失敗しました。もう一度お試しください。';
+      : (isEdit ? '修正に失敗しました。' : '送信に失敗しました。') + 'もう一度お試しください。';
     showToast(errMsg);
     showScreen('screen-question');
     $('btnSubmit').disabled = false;
-    $('btnSubmit').textContent = '送信する';
+    $('btnSubmit').textContent = isEdit ? '修正する' : '送信する';
     return;
   }
-
-  // 進捗更新
-  state.progress[state.currentDay - 1] = true;
-
-  const day = state.currentDay;
 
   // 最小2.5秒は送信アニメーション表示
   await new Promise(r => setTimeout(r, 2500));
 
-  if (day === 7) {
-    // 全日程完了 → Final画面
-    showScreen('screen-final', true);
-  } else {
-    // Day完了画面
-    $('doneTitle').textContent = DAY_TITLES[day - 1] + ' — 完了';
-    $('doneMessage').textContent = DONE_MESSAGES[day - 1];
-    state.currentDay = day + 1;
+  if (isEdit) {
+    // 修正完了 → ダッシュボードに戻る
+    state.answers[targetDay - 1] = answer;
+    state.editMode = false;
+    state.editDay = null;
+    $('doneTitle').textContent = DAY_TITLES[targetDay - 1] + ' — 修正完了';
+    $('doneMessage').textContent = '回答を修正しました。';
     showScreen('screen-day-done', true);
+  } else {
+    // 通常送信
+    state.progress[state.currentDay - 1] = true;
+    state.answers[state.currentDay - 1] = answer;
+    const day = state.currentDay;
+
+    if (day === 7) {
+      showScreen('screen-final', true);
+    } else {
+      $('doneTitle').textContent = DAY_TITLES[day - 1] + ' — 完了';
+      $('doneMessage').textContent = DONE_MESSAGES[day - 1];
+      state.currentDay = day + 1;
+      showScreen('screen-day-done', true);
+    }
   }
 }
 

@@ -170,6 +170,8 @@ function handlePostAction(body) {
       return handleSubmit(body);
     case 'register':
       return handleRegister(body);
+    case 'update':
+      return handleUpdate(body);
     case 'stats':
       return handleGetStats();
     default:
@@ -412,6 +414,54 @@ function handleSubmit(body) {
     is_complete: false,
     next_day: day + 1,
     next_question: DAILY_QUESTIONS[day],
+  });
+}
+
+
+// ============================================================
+// update - 回答修正（既存の回答を上書き）
+// ============================================================
+
+function handleUpdate(body) {
+  var name = (body.name || '').trim();
+  var pin = body.pin || '';
+  var day = parseInt(body.day, 10);
+  var answer = body.answer;
+
+  if (!name) return createErrorResponse('名前が必要です。', 'MISSING_NAME');
+  if (!pin) return createErrorResponse('暗証番号が必要です。', 'MISSING_PIN');
+  if (!day || day < 1 || day > 7) return createErrorResponse('day は 1〜7 の数値で指定してください。', 'INVALID_DAY');
+  if (!answer || answer.trim() === '') return createErrorResponse('回答が空です。', 'EMPTY_ANSWER');
+
+  // シート1でPIN照合
+  var regSheet = getRegSheet();
+  if (!verifyPin(regSheet, name, pin)) {
+    return createErrorResponse('認証に失敗しました。', 'AUTH_FAILED');
+  }
+
+  // シート2で該当行を取得
+  var progSheet = getProgSheet();
+  var row = findProgRowByName(progSheet, name);
+  if (!row) return createErrorResponse('進捗データがありません。', 'NO_PROGRESS');
+
+  // 回答済みチェック（未回答のDayは修正できない）
+  var existing = progSheet.getRange(row, dayAnswerCol(day)).getValue();
+  if (!existing || existing === '') {
+    return createErrorResponse('Day ' + day + ' はまだ回答していません。', 'NOT_ANSWERED');
+  }
+
+  // 回答上書き
+  var now = new Date();
+  var nowStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+  progSheet.getRange(row, dayAnswerCol(day)).setValue(answer.trim());
+  progSheet.getRange(row, dayTimestampCol(day)).setValue(nowStr + ' (修正)');
+
+  Logger.log('回答修正: ' + name + ' Day' + day);
+
+  return createSuccessResponse({
+    message: 'Day ' + day + ' の回答を修正しました。',
+    day: day,
+    saved_at: nowStr,
   });
 }
 
