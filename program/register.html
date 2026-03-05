@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>参加登録 | 浄化プログラム —7days</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --sumi: #0a0a14;
+  --yoru: #0e0e1e;
+  --tsuki: #e8e2d6;
+  --tsuki-dim: #b0a999;
+  --mizu: #5a9bb5;
+  --mizu-pale: #7ec4d8;
+  --mizu-deep: #3a7a94;
+  --shu: #c45848;
+  --gin: #a0aec0;
+  --fuji: #8b7eb8;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Shippori Mincho', serif;
+  background: var(--sumi);
+  color: var(--tsuki);
+  line-height: 2;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+  letter-spacing: 0.03em;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: -30%; left: 50%;
+  transform: translateX(-50%);
+  width: 140vw; height: 80vh;
+  background: radial-gradient(ellipse at 50% 0%, rgba(90, 155, 181, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.water-particles {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+}
+.water-drop {
+  position: absolute;
+  width: 1.5px;
+  background: linear-gradient(180deg, transparent, rgba(126, 196, 216, 0.6), transparent);
+  opacity: 0;
+  animation: waterFall linear infinite;
+}
+@keyframes waterFall {
+  0% { transform: translateY(-20px); opacity: 0; }
+  10% { opacity: 0.35; }
+  85% { opacity: 0.1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  text-align: center;
+}
+
+/* Moon */
+.moon-wrap {
+  width: 100px; height: 100px;
+  margin: 0 auto 32px;
+  position: relative;
+  animation: moonFloat 8s ease-in-out infinite;
+}
+@keyframes moonFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.moon-wrap .moon {
+  width: 74px; height: 74px;
+  border-radius: 50%;
+  border: 1px solid rgba(126, 196, 216, 0.35);
+  position: absolute;
+  top: 13px; left: 13px;
+  box-shadow: 0 0 60px rgba(126, 196, 216, 0.08);
+}
+.moon-wrap .moon-shadow {
+  width: 54px; height: 74px;
+  background: var(--sumi);
+  border-radius: 50%;
+  position: absolute;
+  top: 13px; left: 30px;
+  z-index: 1;
+}
+.moon-wrap .moon-glow {
+  width: 74px; height: 74px;
+  border-radius: 50%;
+  position: absolute;
+  top: 13px; left: 13px;
+  background: radial-gradient(circle at 30% 40%, rgba(126, 196, 216, 0.18), transparent 60%);
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  font-size: 0.75rem;
+  letter-spacing: 0.5em;
+  color: var(--mizu);
+  opacity: 0.4;
+  margin: 0 auto 24px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+h1 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 2;
+  margin-bottom: 8px;
+}
+
+.sub {
+  font-size: 0.8rem;
+  color: var(--tsuki-dim);
+  line-height: 2.2;
+  margin-bottom: 36px;
+}
+
+/* Form */
+.form-group {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 20px;
+}
+.form-label {
+  font-size: 0.75rem;
+  color: var(--tsuki-dim);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.form-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(90, 155, 181, 0.3);
+  color: var(--tsuki);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1rem;
+  padding: 12px 4px;
+  text-align: center;
+  letter-spacing: 0.1em;
+  outline: none;
+  transition: border-color 0.4s ease;
+}
+.form-input:focus {
+  border-color: var(--mizu-pale);
+}
+.form-input::placeholder {
+  color: rgba(232, 226, 214, 0.2);
+}
+.form-pin {
+  font-size: 1.4rem;
+  letter-spacing: 0.6em;
+}
+
+/* Button */
+.btn {
+  display: inline-block;
+  padding: 16px 52px;
+  background: transparent;
+  color: var(--tsuki);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1px solid rgba(90, 155, 181, 0.5);
+  letter-spacing: 0.25em;
+  cursor: pointer;
+  transition: all 0.6s ease;
+  position: relative;
+  overflow: hidden;
+  margin-top: 28px;
+}
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(90, 155, 181, 0.08), transparent);
+  transition: left 0.7s ease;
+}
+.btn:hover::before { left: 100%; }
+.btn:hover {
+  border-color: var(--mizu-pale);
+  box-shadow: 0 0 40px rgba(90, 155, 181, 0.12);
+}
+.btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Messages */
+.error-msg {
+  font-size: 0.8rem;
+  color: var(--shu);
+  margin-top: 12px;
+  min-height: 1.6em;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.error-msg.show { opacity: 1; }
+
+/* Success Screen */
+.success-screen {
+  display: none;
+}
+.success-screen.active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.success-check {
+  width: 80px; height: 80px;
+  margin-bottom: 32px;
+  border: 2px solid var(--mizu);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: checkAppear 0.6s ease;
+  box-shadow: 0 0 30px rgba(90, 155, 181, 0.15);
+}
+@keyframes checkAppear {
+  0% { transform: scale(0); opacity: 0; }
+  60% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.success-check svg {
+  width: 32px; height: 32px;
+  stroke: var(--mizu-pale);
+  stroke-width: 2;
+  fill: none;
+}
+.success-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.success-msg {
+  font-size: 0.85rem;
+  color: var(--tsuki-dim);
+  line-height: 2.2;
+  max-width: 360px;
+}
+.success-note {
+  font-size: 0.75rem;
+  color: var(--gin);
+  margin-top: 24px;
+  padding: 16px 20px;
+  border: 1px solid rgba(90, 155, 181, 0.1);
+  border-radius: 4px;
+  background: rgba(90, 155, 181, 0.03);
+  line-height: 2;
+}
+
+/* Fade */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInUp 0.8s ease forwards;
+}
+@keyframes fadeInUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in.d1 { animation-delay: 0.2s; }
+.fade-in.d2 { animation-delay: 0.4s; }
+.fade-in.d3 { animation-delay: 0.6s; }
+.fade-in.d4 { animation-delay: 0.8s; }
+.fade-in.d5 { animation-delay: 1.0s; }
+
+@media (max-width: 640px) {
+  .container { padding: 0 18px; }
+  h1 { font-size: 1.1rem; }
+  .sub { font-size: 0.75rem; margin-bottom: 28px; }
+  .btn { padding: 14px 36px; font-size: 0.85rem; }
+  .form-pin { font-size: 1.2rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="water-particles" id="waterParticles"></div>
+
+<div class="container">
+  <!-- Registration Form -->
+  <div id="formScreen">
+    <div class="moon-wrap fade-in">
+      <div class="moon"></div>
+      <div class="moon-shadow"></div>
+      <div class="moon-glow"></div>
+    </div>
+    <div class="vertical-text fade-in d1">参 加 登 録</div>
+    <h1 class="fade-in d2">浄化プログラム<br>—7days</h1>
+    <p class="sub fade-in d2">ご参加ありがとうございます。<br>お名前と暗証番号を設定してください。</p>
+
+    <div class="form-group fade-in d3">
+      <div class="form-label">お名前</div>
+      <input type="text" class="form-input" id="nameInput" placeholder="お名前" autocomplete="off">
+    </div>
+
+    <div class="form-group fade-in d3">
+      <div class="form-label">暗証番号（4桁の数字）</div>
+      <input type="tel" class="form-input form-pin" id="pinInput" placeholder="4桁" maxlength="4" pattern="[0-9]*" inputmode="numeric" autocomplete="off">
+    </div>
+
+    <div class="error-msg" id="errorMsg"></div>
+
+    <button class="btn fade-in d4" id="btnRegister">登録する</button>
+
+    <p class="fade-in d5" style="font-size:0.7rem; color:var(--gin); margin-top:20px; opacity:0.5;">
+      暗証番号はプログラムのログインに使います。<br>忘れないようにメモしてください。
+    </p>
+  </div>
+
+  <!-- Success -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-check fade-in">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+    </div>
+    <h2 class="success-title fade-in d1">登録が完了しました</h2>
+    <p class="success-msg fade-in d2">
+      浄化の7日間を始める準備が整いました。<br>
+      プログラムのリンクはLINEからお送りします。
+    </p>
+    <div class="success-note fade-in d3">
+      ログイン情報<br>
+      お名前: <strong id="successName"></strong><br>
+      暗証番号: <strong id="successPin"></strong><br>
+      <span style="font-size:0.68rem;">※ この情報はログインに必要です</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyB0G8RxWxDsVPwb2V1llSa-nddTx2sLka9T1y9QEWDvWYvrcfBREWYGWgycX0qPhP1/exec';
+
+const $ = id => document.getElementById(id);
+
+// Water particles
+(function() {
+  const container = $('waterParticles');
+  const count = window.innerWidth < 640 ? 12 : 20;
+  for (let i = 0; i < count; i++) {
+    const drop = document.createElement('div');
+    drop.className = 'water-drop';
+    drop.style.height = (30 + Math.random() * 80) + 'px';
+    drop.style.left = Math.random() * 100 + '%';
+    drop.style.animationDuration = (6 + Math.random() * 10) + 's';
+    drop.style.animationDelay = Math.random() * 10 + 's';
+    container.appendChild(drop);
+  }
+})();
+
+// PIN input: numbers only
+$('pinInput').addEventListener('input', function() {
+  this.value = this.value.replace(/[^0-9]/g, '');
+});
+
+$('nameInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('pinInput').focus();
+});
+$('pinInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleRegister();
+});
+
+$('btnRegister').addEventListener('click', handleRegister);
+
+async function handleRegister() {
+  const name = $('nameInput').value.trim();
+  const pin = $('pinInput').value.trim();
+
+  $('errorMsg').classList.remove('show');
+
+  if (!name) {
+    showError('お名前を入力してください');
+    return;
+  }
+  if (!pin || !/^\d{4}$/.test(pin)) {
+    showError('4桁の暗証番号を設定してください');
+    $('pinInput').focus();
+    return;
+  }
+
+  $('btnRegister').disabled = true;
+  $('btnRegister').textContent = '...';
+
+  try {
+    const params = new URLSearchParams({
+      action: 'register',
+      payload: JSON.stringify({ action: 'register', name: name, pin: pin })
+    });
+    const url = GAS_URL + '?' + params.toString();
+    const resp = await fetch(url, { redirect: 'follow' });
+    const text = await resp.text();
+    const result = JSON.parse(text);
+
+    if (!result.success) {
+      showError(result.error || '登録に失敗しました');
+      $('btnRegister').disabled = false;
+      $('btnRegister').textContent = '登録する';
+      return;
+    }
+
+    // Success
+    $('successName').textContent = name;
+    $('successPin').textContent = pin;
+    $('formScreen').style.display = 'none';
+    $('successScreen').classList.add('active');
+
+  } catch (err) {
+    showError('通信エラーが発生しました。もう一度お試しください。');
+    $('btnRegister').disabled = false;
+    $('btnRegister').textContent = '登録する';
+  }
+}
+
+function showError(msg) {
+  $('errorMsg').textContent = msg;
+  $('errorMsg').classList.add('show');
+}
+</script>
+</body>
+</html>

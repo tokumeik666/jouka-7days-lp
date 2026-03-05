@@ -928,7 +928,7 @@ body::after {
     </div>
     <div class="welcome-vertical fade-in d1">禊 — 浄化</div>
     <h1 class="welcome-title fade-in d2">浄化プログラム<br>—7days</h1>
-    <p class="welcome-sub fade-in d3">心の器を空にする、7日間の旅。<br>お名前と暗証番号を入力してください。<br><span style="font-size:0.72rem;opacity:0.5;">初めての方は自動的に登録されます</span></p>
+    <p class="welcome-sub fade-in d3">心の器を空にする、7日間の旅。<br>登録したお名前と暗証番号でログインしてください。</p>
     <div class="name-input-wrap fade-in d4">
       <div class="name-label">お名前</div>
       <input type="text" class="name-input" id="nameInput" placeholder="お名前" autocomplete="off">
@@ -1229,34 +1229,20 @@ function localMode(action, data) {
 
   switch (action) {
     case 'auth': {
-      // ローカルモード: 名前+PINで検索 or 新規登録
+      // ローカルモード: 名前+PINで検索（自動登録なし）
       const allKeys = Object.keys(localStorage).filter(k => k.startsWith('jouka_local_'));
+      let nameFound = false;
       for (const k of allKeys) {
         const u = JSON.parse(localStorage.getItem(k) || 'null');
         if (u && u.name === data.name) {
+          nameFound = true;
           if (u.pin !== data.pin) return { success: false, error: '暗証番号が違います。', code: 'WRONG_PIN' };
           recalcLocalTimeLocks(u);
           localStorage.setItem(k, JSON.stringify(u));
           return { success: true, pin_verified: true, registered: true, is_new: false, uid: u.uid, name: u.name, progress: u.progress, current_day: u.progress.current_day };
         }
       }
-      // 新規登録
-      const newUid = data.uid || ('JK' + Date.now().toString(36).toUpperCase());
-      const newKey = 'jouka_local_' + newUid;
-      local = {
-        uid: newUid,
-        name: data.name,
-        pin: data.pin || '0000',
-        progress: { days: {}, days_completed: 0, current_day: 1 }
-      };
-      for (let d = 1; d <= 7; d++) {
-        local.progress.days['day' + d] = {
-          is_completed: false, is_unlocked: d === 1,
-          is_time_locked: false, unlock_at: null, answered_at: null
-        };
-      }
-      localStorage.setItem(newKey, JSON.stringify(local));
-      return { success: true, pin_verified: true, registered: true, is_new: true, uid: newUid, name: data.name, current_day: 1, progress: local.progress };
+      return { success: false, error: 'この名前は登録されていません。先に登録フォームからご登録ください。', code: 'NOT_REGISTERED' };
     }
 
     case 'register':

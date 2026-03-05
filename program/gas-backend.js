@@ -364,33 +364,8 @@ function handleAuth(body) {
     }
   }
 
-  // 名前が見つからない → 新規登録
-  var uid = uidFromUrl || ('JK' + new Date().getTime().toString(36).toUpperCase());
-  var now = new Date();
-  var nowStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
-  var newRow = [uid, name, nowStr];
-
-  for (var j = 0; j < 14; j++) {
-    newRow.push('');
-  }
-  newRow.push(false);  // completed
-  newRow.push('');     // completed_at
-  newRow.push(pin);    // pin
-
-  sheet.appendRow(newRow);
-  Logger.log('auth新規登録: ' + uid + ' (' + name + ')');
-
-  return createSuccessResponse({
-    registered: true,
-    pin_verified: true,
-    is_new: true,
-    uid: uid,
-    name: name,
-    registered_at: nowStr,
-    current_day: 1,
-    question: DAILY_QUESTIONS[0],
-    questions: DAILY_QUESTIONS,
-  });
+  // 名前が見つからない → 未登録エラー
+  return createErrorResponse('この名前は登録されていません。先に登録フォームからご登録ください。', 'NOT_REGISTERED');
 }
 
 
@@ -502,28 +477,28 @@ function handleGetStats() {
 // ============================================================
 
 function handleRegister(body) {
-  const uid = body.uid;
-  const name = body.name || '';
+  const name = (body.name || '').trim();
   const pin = body.pin || '';
+  const uid = body.uid || ('JK' + new Date().getTime().toString(36).toUpperCase());
 
-  if (!uid) {
-    return createErrorResponse('uid フィールドが必要です。', 'MISSING_UID');
+  if (!name) {
+    return createErrorResponse('お名前を入力してください。', 'MISSING_NAME');
   }
   if (!pin || !/^\d{4}$/.test(pin)) {
     return createErrorResponse('4桁の暗証番号を設定してください。', 'INVALID_PIN');
   }
 
   const sheet = getSheet();
-  const existingRow = findRowByUid(sheet, uid);
+  const lastRow = sheet.getLastRow();
 
-  if (existingRow) {
-    // 既に登録済み → PIN認証が必要
-    return createSuccessResponse({
-      message: 'すでに登録済みです。暗証番号を入力してください。',
-      is_new: false,
-      needs_pin: true,
-      uid: uid,
-    });
+  // 同じ名前で既に登録済みかチェック
+  if (lastRow > 1) {
+    var nameCol = sheet.getRange(2, COL.NAME, lastRow - 1, 1).getValues();
+    for (var i = 0; i < nameCol.length; i++) {
+      if (String(nameCol[i][0]).trim() === name) {
+        return createErrorResponse('このお名前はすでに登録されています。プログラムページからログインしてください。', 'ALREADY_REGISTERED');
+      }
+    }
   }
 
   // 新規登録
@@ -531,11 +506,10 @@ function handleRegister(body) {
   const nowStr = Utilities.formatDate(now, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
   const newRow = [uid, name, nowStr];
 
-  // Day1〜Day7の回答・日時列 + 完了フラグ + 完了日時 を空白で埋める
-  for (var i = 0; i < 14; i++) { // 7 days x 2 columns
+  for (var j = 0; j < 14; j++) {
     newRow.push('');
   }
-  newRow.push(false); // R: completed = FALSE
+  newRow.push(false); // R: completed
   newRow.push('');    // S: completed_at
   newRow.push(pin);   // T: PIN
 
@@ -544,13 +518,11 @@ function handleRegister(body) {
   Logger.log('新規参加者登録: ' + uid + ' (' + name + ')');
 
   return createSuccessResponse({
-    message: '登録が完了しました。浄化の7日間が始まります。',
+    message: '登録が完了しました。プログラムページからログインしてください。',
     is_new: true,
     uid: uid,
     name: name,
     registered_at: nowStr,
-    current_day: 1,
-    question: DAILY_QUESTIONS[0],
   });
 }
 
