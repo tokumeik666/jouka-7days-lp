@@ -1276,8 +1276,8 @@ body::after {
         <div class="moon-shadow"></div>
         <div class="moon-glow"></div>
       </div>
-      <h2 class="preplay-title fade-in d1">浄化プログラム<br>—7days</h2>
-      <p class="preplay-sub fade-in d2">あなたの心の器を、空にする7日間。</p>
+      <h2 class="preplay-title fade-in d1" id="preplayTitle">浄化プログラム<br>—7days</h2>
+      <p class="preplay-sub fade-in d2" id="preplaySub">あなたの心の器を、空にする7日間。</p>
       <button class="btn-preplay fade-in d3" id="btnPreplay">浄化プログラムを始める</button>
       <p class="fade-in d4" style="font-size:0.7rem; color:var(--gin); margin-top:24px; line-height:2; opacity:0.6;">※ このボタンを押すと音声が再生されます。<br>イヤホンがあれば、イヤホンをしてから進めてください。</p>
     </div>
@@ -1451,7 +1451,7 @@ const ADMIN_KEY = 'jouka7admin';
 // 例: https://youtu.be/dQw4w9WgXcQ → 'dQw4w9WgXcQ'
 const WELCOME_VIDEO_ID = '388HQBdb2-g';  // ログイン直後の動画
 const DAY_VIDEOS = [
-  '',  // Day 1 完了後
+  'fCeQLp5jXTg',  // Day 1 完了後
   '',  // Day 2 完了後
   '',  // Day 3 完了後
   '',  // Day 4 完了後
@@ -2385,7 +2385,7 @@ async function handleSubmit() {
     const dayVideoId = DAY_VIDEOS[dayIdx] || '';
 
     if (dayVideoId) {
-      // Day完了動画を再生 → 終了後に完了画面
+      // Day完了動画を再生 → 再生ボタン画面 → 動画 → 完了画面
       playVideo(dayVideoId, () => {
         if (day === 7) {
           showScreen('screen-final', true);
@@ -2395,6 +2395,10 @@ async function handleSubmit() {
           state.currentDay = day + 1;
           showScreen('screen-day-done', true);
         }
+      }, {
+        title: DAY_TITLES[dayIdx] + '<br>— 完了',
+        sub: 'お疲れ様でした。メッセージをお届けします。',
+        btn: '動画を再生する'
       });
     } else {
       // 動画未設定 → 従来通り
@@ -2427,7 +2431,7 @@ window.onYouTubeIframeAPIReady = function() {
   ytReady = true;
 };
 
-// prePlay: trueの場合、再生ボタン画面を先に表示
+// prePlay: trueまたはオブジェクト{title, sub, btn}の場合、再生ボタン画面を先に表示
 function playVideo(videoId, onComplete, prePlay) {
   if (!videoId) {
     if (onComplete) onComplete();
@@ -2435,13 +2439,21 @@ function playVideo(videoId, onComplete, prePlay) {
   }
 
   if (prePlay) {
-    // プレイ前画面を表示 → ボタンクリックで動画開始
+    // プレイ前画面のテキストをカスタマイズ
+    if (typeof prePlay === 'object') {
+      $('preplayTitle').innerHTML = prePlay.title || '浄化プログラム<br>—7days';
+      $('preplaySub').textContent = prePlay.sub || '';
+      $('btnPreplay').textContent = prePlay.btn || '動画を再生する';
+    } else {
+      $('preplayTitle').innerHTML = '浄化プログラム<br>—7days';
+      $('preplaySub').textContent = 'あなたの心の器を、空にする7日間。';
+      $('btnPreplay').textContent = '浄化プログラムを始める';
+    }
     showScreen('screen-preplay', true);
     $('btnPreplay').onclick = function() {
       startVideoPlayback(videoId, onComplete);
     };
   } else {
-    // 即再生（Day完了動画用）
     startVideoPlayback(videoId, onComplete);
   }
 }
