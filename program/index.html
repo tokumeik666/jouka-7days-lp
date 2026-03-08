@@ -1613,22 +1613,45 @@ async function apiCall(action, data = {}) {
   }
 
   try {
-    // GAS Web Appは全てGETで通信（CORS/リダイレクト問題を回避）
-    let params;
+    const isReadAction = ['status', 'list', 'stats'].includes(action);
+    let text;
 
-    if (['status', 'list', 'stats'].includes(action)) {
-      // GET系: パラメータをそのまま渡す
-      params = new URLSearchParams({ action, ...data });
+    if (isReadAction) {
+      // GET系: URLパラメータで送信
+      const params = new URLSearchParams({ action, ...data });
+      const url = GAS_URL + '?' + params.toString();
+      const resp = await fetch(url, { redirect: 'follow' });
+      text = await resp.text();
     } else {
-      // POST系: payloadのみ（個別パラメータは含めない→URL短縮）
-      params = new URLSearchParams();
-      params.set('action', action);
-      params.set('payload', JSON.stringify({ action, ...data }));
+      // POST系: bodyで送信（URL長制限なし、長文回答対応）
+      const jsonBody = JSON.stringify({ action, ...data });
+      let usedPost = false;
+      try {
+        const resp = await fetch(GAS_URL, {
+          method: 'POST',
+          body: jsonBody,
+          redirect: 'follow',
+        });
+        text = await resp.text();
+        usedPost = true;
+        // POSTリダイレクトで空レスポンスの場合はGETフォールバック
+        if (!text || text.trim() === '') {
+          usedPost = false;
+        }
+      } catch (postErr) {
+        usedPost = false;
+      }
+      if (!usedPost) {
+        // GETフォールバック（短い回答時のみ成功する可能性あり）
+        console.warn('POST unavailable, fallback to GET');
+        const params = new URLSearchParams();
+        params.set('action', action);
+        params.set('payload', jsonBody);
+        const url = GAS_URL + '?' + params.toString();
+        const resp = await fetch(url, { redirect: 'follow' });
+        text = await resp.text();
+      }
     }
-
-    const url = GAS_URL + '?' + params.toString();
-    const resp = await fetch(url, { redirect: 'follow' });
-    const text = await resp.text();
 
     try {
       return JSON.parse(text);
