@@ -580,7 +580,6 @@ body::after {
 /* ===== Video Screen ===== */
 #screen-video {
   text-align: center;
-  background: #000;
 }
 #screen-video .container {
   display: flex;
@@ -589,15 +588,18 @@ body::after {
   justify-content: center;
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 0;
+  padding: 24px 0;
   max-width: 100%;
 }
 .video-wrap {
   width: 100%;
-  max-width: 560px;
+  max-width: 720px;
   aspect-ratio: 16 / 9;
   position: relative;
   background: #000;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 0 60px rgba(0,0,0,0.5);
 }
 .video-wrap iframe {
   position: absolute;
@@ -620,9 +622,93 @@ body::after {
   opacity: 0;
   transition: opacity 0.5s ease;
   letter-spacing: 0.1em;
+  padding: 0 24px;
 }
 .video-msg.show {
   opacity: 1;
+}
+
+/* Pre-play screen */
+.video-preplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.video-preplay .preplay-moon {
+  width: 100px; height: 100px;
+  margin: 0 auto 40px;
+  position: relative;
+  animation: moonFloat 8s ease-in-out infinite;
+}
+.video-preplay .preplay-moon .moon {
+  width: 74px; height: 74px;
+  border-radius: 50%;
+  border: 1px solid rgba(126, 196, 216, 0.35);
+  position: absolute;
+  top: 13px; left: 13px;
+  box-shadow: 0 0 60px rgba(126, 196, 216, 0.08);
+}
+.video-preplay .preplay-moon .moon-shadow {
+  width: 54px; height: 74px;
+  background: var(--sumi);
+  border-radius: 50%;
+  position: absolute;
+  top: 13px; left: 30px;
+  z-index: 1;
+}
+.video-preplay .preplay-moon .moon-glow {
+  width: 74px; height: 74px;
+  border-radius: 50%;
+  position: absolute;
+  top: 13px; left: 13px;
+  background: radial-gradient(circle at 30% 40%, rgba(126, 196, 216, 0.18), transparent 60%);
+}
+.preplay-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 2;
+  margin-bottom: 8px;
+  letter-spacing: 0.15em;
+}
+.preplay-sub {
+  font-size: 0.8rem;
+  color: var(--tsuki-dim);
+  line-height: 2.2;
+  margin-bottom: 48px;
+}
+.btn-preplay {
+  display: inline-block;
+  padding: 18px 48px;
+  background: transparent;
+  color: var(--tsuki);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: 1px solid rgba(90, 155, 181, 0.5);
+  letter-spacing: 0.3em;
+  cursor: pointer;
+  transition: all 0.6s ease;
+  position: relative;
+  overflow: hidden;
+}
+.btn-preplay::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(90, 155, 181, 0.08), transparent);
+  transition: left 0.7s ease;
+}
+.btn-preplay:hover::before { left: 100%; }
+.btn-preplay:hover {
+  border-color: var(--mizu-pale);
+  box-shadow: 0 0 40px rgba(90, 155, 181, 0.12);
+}
+
+@media (max-width: 640px) {
+  .video-wrap { border-radius: 0; }
+  .btn-preplay { padding: 16px 36px; font-size: 0.85rem; }
 }
 
 /* ===== Complete Screen (Day Done) ===== */
@@ -1181,6 +1267,22 @@ body::after {
   </div>
 </div>
 
+<!-- ===== Video Pre-play Screen ===== -->
+<div class="screen" id="screen-preplay">
+  <div class="container">
+    <div class="video-preplay fade-in">
+      <div class="preplay-moon">
+        <div class="moon"></div>
+        <div class="moon-shadow"></div>
+        <div class="moon-glow"></div>
+      </div>
+      <h2 class="preplay-title fade-in d1">浄化プログラム<br>—7days</h2>
+      <p class="preplay-sub fade-in d2">あなたの心の器を、空にする7日間。</p>
+      <button class="btn-preplay fade-in d3" id="btnPreplay">浄化プログラムを始める</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== Video Screen ===== -->
 <div class="screen" id="screen-video">
   <div class="container">
@@ -1703,7 +1805,7 @@ async function autoLogin() {
         localStorage.setItem('jouka_welcome_seen', '1');
         renderDashboard();
         showScreen('screen-dashboard', true);
-      });
+      }, true);  // prePlay: ボタン画面を先に表示
     } else {
       renderDashboard();
       showScreen('screen-dashboard', true);
@@ -1866,7 +1968,7 @@ async function handleEnter() {
       localStorage.setItem('jouka_welcome_seen', '1');
       renderDashboard();
       showScreen('screen-dashboard', true);
-    });
+    }, true);  // prePlay: ボタン画面を先に表示
   } else {
     renderDashboard();
     showScreen('screen-dashboard', true);
@@ -2323,25 +2425,37 @@ window.onYouTubeIframeAPIReady = function() {
   ytReady = true;
 };
 
-function playVideo(videoId, onComplete) {
+// prePlay: trueの場合、再生ボタン画面を先に表示
+function playVideo(videoId, onComplete, prePlay) {
   if (!videoId) {
-    // 動画IDが未設定 → スキップして即コールバック
     if (onComplete) onComplete();
     return;
   }
 
+  if (prePlay) {
+    // プレイ前画面を表示 → ボタンクリックで動画開始
+    showScreen('screen-preplay', true);
+    $('btnPreplay').onclick = function() {
+      startVideoPlayback(videoId, onComplete);
+    };
+  } else {
+    // 即再生（Day完了動画用）
+    startVideoPlayback(videoId, onComplete);
+  }
+}
+
+function startVideoPlayback(videoId, onComplete) {
   videoCallback = onComplete;
   $('videoLoading').style.display = '';
+  $('videoLoading').textContent = '読み込み中...';
   $('videoMsg').classList.remove('show');
   showScreen('screen-video', true);
 
-  // 2秒後にメッセージ表示
   setTimeout(() => {
     $('videoMsg').classList.add('show');
   }, 2000);
 
   function createPlayer() {
-    // 既存プレイヤーがあれば破棄
     if (ytPlayer && ytPlayer.destroy) {
       try { ytPlayer.destroy(); } catch(e) {}
     }
@@ -2364,9 +2478,7 @@ function playVideo(videoId, onComplete) {
           event.target.playVideo();
         },
         onStateChange: function(event) {
-          // YT.PlayerState.ENDED = 0
           if (event.data === 0) {
-            // 動画終了 → コールバック実行
             if (videoCallback) {
               const cb = videoCallback;
               videoCallback = null;
@@ -2375,7 +2487,6 @@ function playVideo(videoId, onComplete) {
           }
         },
         onError: function() {
-          // エラー時もコールバック実行して先に進める
           $('videoLoading').textContent = '動画を読み込めませんでした';
           setTimeout(() => {
             if (videoCallback) {
@@ -2392,7 +2503,6 @@ function playVideo(videoId, onComplete) {
   if (ytReady) {
     createPlayer();
   } else {
-    // APIまだ → 待つ
     const waitInterval = setInterval(() => {
       if (ytReady) {
         clearInterval(waitInterval);
