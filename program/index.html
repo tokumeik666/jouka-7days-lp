@@ -577,6 +577,54 @@ body::after {
   opacity: 0.5;
 }
 
+/* ===== Video Screen ===== */
+#screen-video {
+  text-align: center;
+  background: #000;
+}
+#screen-video .container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
+  max-width: 100%;
+}
+.video-wrap {
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  background: #000;
+}
+.video-wrap iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  border: none;
+}
+.video-loading {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--tsuki-dim);
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+}
+.video-msg {
+  font-size: 0.75rem;
+  color: var(--tsuki-dim);
+  margin-top: 20px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  letter-spacing: 0.1em;
+}
+.video-msg.show {
+  opacity: 1;
+}
+
 /* ===== Complete Screen (Day Done) ===== */
 #screen-day-done {
   text-align: center;
@@ -1133,6 +1181,17 @@ body::after {
   </div>
 </div>
 
+<!-- ===== Video Screen ===== -->
+<div class="screen" id="screen-video">
+  <div class="container">
+    <div class="video-wrap" id="videoWrap">
+      <div class="video-loading" id="videoLoading">読み込み中...</div>
+      <div id="ytPlayer"></div>
+    </div>
+    <p class="video-msg" id="videoMsg">動画が終わると自動で次に進みます</p>
+  </div>
+</div>
+
 <!-- ===== Day Done Screen ===== -->
 <div class="screen" id="screen-day-done">
   <div class="container">
@@ -1283,6 +1342,20 @@ const DONE_MESSAGES = [
 const urlParams = new URLSearchParams(window.location.search);
 const testMode = urlParams.get('test') === '1';
 const ADMIN_KEY = 'jouka7admin';
+
+// ===== VIDEO CONFIG =====
+// YouTube動画ID（限定公開のURLから ?v=XXXXX の部分）
+// 例: https://youtu.be/dQw4w9WgXcQ → 'dQw4w9WgXcQ'
+const WELCOME_VIDEO_ID = '';  // ログイン直後の動画
+const DAY_VIDEOS = [
+  '',  // Day 1 完了後
+  '',  // Day 2 完了後
+  '',  // Day 3 完了後
+  '',  // Day 4 完了後
+  '',  // Day 5 完了後
+  '',  // Day 6 完了後
+  '',  // Day 7 完了後
+];
 
 // ===== STATE =====
 let state = {
@@ -1622,8 +1695,19 @@ async function autoLogin() {
     parseProgress(result.progress);
     saveSession();
     hideLoading();
-    renderDashboard();
-    showScreen('screen-dashboard', true);
+
+    // ウェルカム動画（初回のみ）
+    const hasSeenWelcome = localStorage.getItem('jouka_welcome_seen');
+    if (WELCOME_VIDEO_ID && !hasSeenWelcome) {
+      playVideo(WELCOME_VIDEO_ID, () => {
+        localStorage.setItem('jouka_welcome_seen', '1');
+        renderDashboard();
+        showScreen('screen-dashboard', true);
+      });
+    } else {
+      renderDashboard();
+      showScreen('screen-dashboard', true);
+    }
     return;
   }
 
@@ -1775,8 +1859,18 @@ async function handleEnter() {
     }
   }
 
-  renderDashboard();
-  showScreen('screen-dashboard', true);
+  // ウェルカム動画（初回ログイン時のみ）
+  const hasSeenWelcome = localStorage.getItem('jouka_welcome_seen');
+  if (WELCOME_VIDEO_ID && !hasSeenWelcome) {
+    playVideo(WELCOME_VIDEO_ID, () => {
+      localStorage.setItem('jouka_welcome_seen', '1');
+      renderDashboard();
+      showScreen('screen-dashboard', true);
+    });
+  } else {
+    renderDashboard();
+    showScreen('screen-dashboard', true);
+  }
 }
 
 // ===== RENDER DASHBOARD =====
@@ -2179,20 +2273,132 @@ async function handleSubmit() {
     state.currentSubQ = targetSub + 1;
     transitionToNextSubQ(targetDay, state.currentSubQ);
   } else {
-    // LAST sub-question of the day: show sending animation → day done
+    // LAST sub-question of the day: show sending animation → video → day done
     await new Promise(r => setTimeout(r, 2500));
 
     state.progress[dayIdx] = true;
     const day = state.currentDay;
+    const dayVideoId = DAY_VIDEOS[dayIdx] || '';
 
-    if (day === 7) {
-      showScreen('screen-final', true);
+    if (dayVideoId) {
+      // Day完了動画を再生 → 終了後に完了画面
+      playVideo(dayVideoId, () => {
+        if (day === 7) {
+          showScreen('screen-final', true);
+        } else {
+          $('doneTitle').textContent = DAY_TITLES[dayIdx] + ' — 完了';
+          $('doneMessage').textContent = DONE_MESSAGES[dayIdx];
+          state.currentDay = day + 1;
+          showScreen('screen-day-done', true);
+        }
+      });
     } else {
-      $('doneTitle').textContent = DAY_TITLES[dayIdx] + ' — 完了';
-      $('doneMessage').textContent = DONE_MESSAGES[dayIdx];
-      state.currentDay = day + 1;
-      showScreen('screen-day-done', true);
+      // 動画未設定 → 従来通り
+      if (day === 7) {
+        showScreen('screen-final', true);
+      } else {
+        $('doneTitle').textContent = DAY_TITLES[dayIdx] + ' — 完了';
+        $('doneMessage').textContent = DONE_MESSAGES[dayIdx];
+        state.currentDay = day + 1;
+        showScreen('screen-day-done', true);
+      }
     }
+  }
+}
+
+// ===== YOUTUBE VIDEO PLAYER =====
+let ytPlayer = null;
+let ytReady = false;
+let videoCallback = null;  // 動画終了後に呼ばれるコールバック
+
+// YouTube Iframe API読み込み
+(function() {
+  const tag = document.createElement('script');
+  tag.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(tag);
+})();
+
+// YouTube API準備完了コールバック（グローバル）
+window.onYouTubeIframeAPIReady = function() {
+  ytReady = true;
+};
+
+function playVideo(videoId, onComplete) {
+  if (!videoId) {
+    // 動画IDが未設定 → スキップして即コールバック
+    if (onComplete) onComplete();
+    return;
+  }
+
+  videoCallback = onComplete;
+  $('videoLoading').style.display = '';
+  $('videoMsg').classList.remove('show');
+  showScreen('screen-video', true);
+
+  // 2秒後にメッセージ表示
+  setTimeout(() => {
+    $('videoMsg').classList.add('show');
+  }, 2000);
+
+  function createPlayer() {
+    // 既存プレイヤーがあれば破棄
+    if (ytPlayer && ytPlayer.destroy) {
+      try { ytPlayer.destroy(); } catch(e) {}
+    }
+    $('ytPlayer').innerHTML = '';
+
+    ytPlayer = new YT.Player('ytPlayer', {
+      videoId: videoId,
+      playerVars: {
+        autoplay: 1,
+        controls: 0,
+        disablekb: 1,
+        fs: 0,
+        modestbranding: 1,
+        rel: 0,
+        playsinline: 1,
+      },
+      events: {
+        onReady: function(event) {
+          $('videoLoading').style.display = 'none';
+          event.target.playVideo();
+        },
+        onStateChange: function(event) {
+          // YT.PlayerState.ENDED = 0
+          if (event.data === 0) {
+            // 動画終了 → コールバック実行
+            if (videoCallback) {
+              const cb = videoCallback;
+              videoCallback = null;
+              cb();
+            }
+          }
+        },
+        onError: function() {
+          // エラー時もコールバック実行して先に進める
+          $('videoLoading').textContent = '動画を読み込めませんでした';
+          setTimeout(() => {
+            if (videoCallback) {
+              const cb = videoCallback;
+              videoCallback = null;
+              cb();
+            }
+          }, 2000);
+        }
+      }
+    });
+  }
+
+  if (ytReady) {
+    createPlayer();
+  } else {
+    // APIまだ → 待つ
+    const waitInterval = setInterval(() => {
+      if (ytReady) {
+        clearInterval(waitInterval);
+        createPlayer();
+      }
+    }, 200);
   }
 }
 
