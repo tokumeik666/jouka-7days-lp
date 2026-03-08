@@ -2436,7 +2436,7 @@ window.onYouTubeIframeAPIReady = function() {
 
 // prePlay: trueまたはオブジェクト{title, sub, btn}の場合、再生ボタン画面を先に表示
 function playVideo(videoId, onComplete, prePlay) {
-  if (!videoId) {
+  if (!videoId || testMode) {
     if (onComplete) onComplete();
     return;
   }
