@@ -2502,7 +2502,8 @@ window.onYouTubeIframeAPIReady = function() {
 
 // prePlay: trueまたはオブジェクト{title, sub, btn}の場合、再生ボタン画面を先に表示
 function playVideo(videoId, onComplete, prePlay) {
-  if (!videoId) {
+  // テストモード: 動画は全て自動スキップ
+  if (!videoId || testMode) {
     if (onComplete) onComplete();
     return;
   }
@@ -2518,20 +2519,9 @@ function playVideo(videoId, onComplete, prePlay) {
       $('preplaySub').textContent = 'あなたの心の器を、空にする7日間。';
       $('btnPreplay').textContent = '浄化プログラムを始める';
     }
-    // テストモード: スキップボタン表示
-    const skipBtn = $('btnSkipPreplay');
-    if (testMode) {
-      skipBtn.style.display = '';
-      skipBtn.onclick = function() {
-        skipBtn.style.display = 'none';
-        if (onComplete) onComplete();
-      };
-    } else {
-      skipBtn.style.display = 'none';
-    }
+    $('btnSkipPreplay').style.display = 'none';
     showScreen('screen-preplay', true);
     $('btnPreplay').onclick = function() {
-      skipBtn.style.display = 'none';
       startVideoPlayback(videoId, onComplete);
     };
   } else {
@@ -2544,24 +2534,7 @@ function startVideoPlayback(videoId, onComplete) {
   $('videoLoading').style.display = '';
   $('videoLoading').textContent = '読み込み中...';
   $('videoMsg').classList.remove('show');
-  // テストモード: 動画再生中もスキップ可能
-  const skipVideoBtn = $('btnSkipVideo');
-  if (testMode) {
-    skipVideoBtn.style.display = '';
-    skipVideoBtn.onclick = function() {
-      skipVideoBtn.style.display = 'none';
-      if (ytPlayer && ytPlayer.destroy) {
-        try { ytPlayer.destroy(); } catch(e) {}
-      }
-      if (videoCallback) {
-        const cb = videoCallback;
-        videoCallback = null;
-        cb();
-      }
-    };
-  } else {
-    skipVideoBtn.style.display = 'none';
-  }
+  $('btnSkipVideo').style.display = 'none';
   showScreen('screen-video', true);
 
   setTimeout(() => {
