@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>管理画面 | 浄化プログラム —7days</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===== Design System ===== */
+:root {
+  --sumi: #0a0a14;
+  --yoru: #0e0e1e;
+  --fukai: #121228;
+  --tsuki: #e8e2d6;
+  --tsuki-dim: #b0a999;
+  --mizu: #5a9bb5;
+  --mizu-pale: #7ec4d8;
+  --mizu-deep: #3a7a94;
+  --mizu-glow: rgba(90, 155, 181, 0.08);
+  --shu: #c45848;
+  --shu-dim: rgba(196, 88, 72, 0.7);
+  --gin: #a0aec0;
+  --fuji: #8b7eb8;
+  --kinu: rgba(232, 226, 214, 0.06);
+  --green: #5bb57a;
+  --green-dim: rgba(91, 181, 122, 0.15);
+  --amber: #b5a05a;
+  --amber-dim: rgba(181, 160, 90, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Shippori Mincho', serif;
+  background: var(--sumi);
+  color: var(--tsuki);
+  line-height: 1.8;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+  letter-spacing: 0.03em;
+}
+
+/* ===== Washi Texture ===== */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== Moonlight Ambient ===== */
+body::after {
+  content: '';
+  position: fixed;
+  top: -30%; left: 50%;
+  transform: translateX(-50%);
+  width: 140vw; height: 80vh;
+  background: radial-gradient(ellipse at 50% 0%, rgba(90, 155, 181, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ===== Water Particles ===== */
+.water-particles {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; z-index: 0;
+}
+.water-drop {
+  position: absolute;
+  width: 1.5px;
+  background: linear-gradient(180deg, transparent, rgba(126, 196, 216, 0.6), transparent);
+  opacity: 0;
+  animation: waterFall linear infinite;
+}
+@keyframes waterFall {
+  0% { transform: translateY(-20px); opacity: 0; }
+  10% { opacity: 0.35; }
+  85% { opacity: 0.1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(90, 155, 181, 0.2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(90, 155, 181, 0.4); }
+
+/* ===== Layout ===== */
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 20px;
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ===== Views ===== */
+.view {
+  display: none;
+  padding: 40px 0 60px;
+}
+.view.active {
+  display: block;
+  animation: viewFadeIn 0.5s ease;
+}
+@keyframes viewFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Fade Animations ===== */
+.fade-in {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeInUp 0.7s ease forwards;
+}
+@keyframes fadeInUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in.d1 { animation-delay: 0.15s; }
+.fade-in.d2 { animation-delay: 0.3s; }
+.fade-in.d3 { animation-delay: 0.45s; }
+.fade-in.d4 { animation-delay: 0.6s; }
+
+/* ===== Login Screen ===== */
+#view-login {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  text-align: center;
+  padding: 40px 0;
+}
+
+.login-moon {
+  width: 90px; height: 90px;
+  margin: 0 auto 32px;
+  position: relative;
+  animation: moonFloat 8s ease-in-out infinite;
+}
+@keyframes moonFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+.login-moon .moon {
+  width: 66px; height: 66px;
+  border-radius: 50%;
+  border: 1px solid rgba(126, 196, 216, 0.35);
+  position: absolute;
+  top: 12px; left: 12px;
+  box-shadow: 0 0 50px rgba(126, 196, 216, 0.08);
+}
+.login-moon .moon-shadow {
+  width: 48px; height: 66px;
+  background: var(--sumi);
+  border-radius: 50%;
+  position: absolute;
+  top: 12px; left: 28px;
+  z-index: 1;
+}
+.login-moon .moon-glow {
+  width: 66px; height: 66px;
+  border-radius: 50%;
+  position: absolute;
+  top: 12px; left: 12px;
+  background: radial-gradient(circle at 30% 40%, rgba(126, 196, 216, 0.18), transparent 60%);
+}
+
+.login-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 2;
+  margin-bottom: 4px;
+}
+.login-sub {
+  font-size: 0.75rem;
+  color: var(--tsuki-dim);
+  margin-bottom: 40px;
+  letter-spacing: 0.2em;
+}
+
+.login-input {
+  width: 100%;
+  max-width: 280px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(90, 155, 181, 0.3);
+  color: var(--tsuki);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1rem;
+  padding: 12px 4px;
+  text-align: center;
+  letter-spacing: 0.15em;
+  outline: none;
+  transition: border-color 0.4s ease;
+  -webkit-text-security: disc;
+}
+.login-input:focus {
+  border-color: var(--mizu-pale);
+}
+.login-input::placeholder {
+  color: rgba(232, 226, 214, 0.2);
+  -webkit-text-security: none;
+}
+
+.login-error {
+  font-size: 0.78rem;
+  color: var(--shu);
+  margin-top: 12px;
+  min-height: 1.5em;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.login-error.show { opacity: 1; }
+
+/* ===== Button Styles ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 40px;
+  background: transparent;
+  color: var(--tsuki);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid rgba(90, 155, 181, 0.5);
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: all 0.5s ease;
+  position: relative;
+  overflow: hidden;
+  margin-top: 28px;
+}
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(90, 155, 181, 0.08), transparent);
+  transition: left 0.7s ease;
+}
+.btn:hover::before { left: 100%; }
+.btn:hover {
+  border-color: var(--mizu-pale);
+  box-shadow: 0 0 30px rgba(90, 155, 181, 0.12);
+}
+.btn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.btn-sm {
+  padding: 8px 20px;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  margin-top: 0;
+}
+
+.btn-ghost {
+  border-color: rgba(90, 155, 181, 0.2);
+  font-weight: 400;
+}
+
+.btn-icon {
+  padding: 8px 14px;
+  border: 1px solid rgba(90, 155, 181, 0.2);
+  background: transparent;
+  color: var(--tsuki-dim);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.05em;
+}
+.btn-icon:hover {
+  border-color: var(--mizu);
+  color: var(--tsuki);
+}
+
+/* ===== Header Bar ===== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0 16px;
+  border-bottom: 1px solid rgba(90, 155, 181, 0.08);
+  margin-bottom: 28px;
+}
+.header-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--tsuki);
+  letter-spacing: 0.1em;
+}
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ===== Stats Cards ===== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: linear-gradient(135deg, rgba(90, 155, 181, 0.04), rgba(90, 155, 181, 0.01));
+  border: 1px solid rgba(90, 155, 181, 0.08);
+  padding: 16px 12px;
+  text-align: center;
+  border-radius: 3px;
+}
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--mizu-pale);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--tsuki-dim);
+  letter-spacing: 0.08em;
+}
+
+/* ===== Day Breakdown ===== */
+.day-breakdown {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+.day-breakdown-item {
+  flex: 1;
+  min-width: 70px;
+  background: rgba(90, 155, 181, 0.03);
+  border: 1px solid rgba(90, 155, 181, 0.06);
+  padding: 10px 6px;
+  text-align: center;
+  border-radius: 2px;
+}
+.day-breakdown-label {
+  font-size: 0.6rem;
+  color: var(--gin);
+  margin-bottom: 2px;
+}
+.day-breakdown-count {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--mizu);
+}
+
+/* ===== Section Label ===== */
+.section-label {
+  font-size: 0.7rem;
+  color: var(--mizu);
+  letter-spacing: 0.3em;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+/* ===== Participant Cards ===== */
+.participant-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.participant-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(90, 155, 181, 0.04), rgba(90, 155, 181, 0.01));
+  border: 1px solid rgba(90, 155, 181, 0.08);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.4s ease;
+}
+.participant-card:hover {
+  border-color: rgba(90, 155, 181, 0.25);
+  background: linear-gradient(135deg, rgba(90, 155, 181, 0.07), rgba(90, 155, 181, 0.02));
+  transform: translateX(4px);
+}
+
+.p-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(90, 155, 181, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mizu-pale);
+  background: rgba(90, 155, 181, 0.06);
+  flex-shrink: 0;
+}
+
+.p-info {
+  flex: 1;
+  min-width: 0;
+}
+.p-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.p-status {
+  font-size: 0.7rem;
+  color: var(--tsuki-dim);
+}
+
+.p-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.p-progress-bar {
+  width: 80px;
+  height: 4px;
+  background: rgba(90, 155, 181, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.p-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--mizu-deep), var(--mizu-pale));
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+.p-progress-text {
+  font-size: 0.62rem;
+  color: var(--gin);
+}
+
+.p-arrow {
+  color: var(--gin);
+  opacity: 0.4;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  transition: opacity 0.3s ease;
+}
+.participant-card:hover .p-arrow {
+  opacity: 0.8;
+}
+
+/* ===== Status Badges ===== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 0.62rem;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+.badge-complete {
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid rgba(91, 181, 122, 0.2);
+}
+.badge-progress {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border: 1px solid rgba(181, 160, 90, 0.2);
+}
+.badge-notstarted {
+  color: var(--gin);
+  background: rgba(160, 174, 192, 0.08);
+  border: 1px solid rgba(160, 174, 192, 0.12);
+}
+
+/* ===== Participant Detail View ===== */
+.detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.detail-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 1px solid rgba(90, 155, 181, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--mizu-pale);
+  background: rgba(90, 155, 181, 0.06);
+  flex-shrink: 0;
+}
+.detail-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+.detail-meta {
+  font-size: 0.72rem;
+  color: var(--tsuki-dim);
+  margin-top: 2px;
+}
+
+/* ===== Participant Selector ===== */
+.participant-selector {
+  position: relative;
+  margin-bottom: 24px;
+}
+.selector-trigger {
+  width: 100%;
+  padding: 10px 16px;
+  background: rgba(90, 155, 181, 0.03);
+  border: 1px solid rgba(90, 155, 181, 0.1);
+  border-radius: 3px;
+  color: var(--tsuki-dim);
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.3s ease;
+}
+.selector-trigger:hover {
+  border-color: rgba(90, 155, 181, 0.25);
+}
+.selector-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  background: var(--yoru);
+  border: 1px solid rgba(90, 155, 181, 0.15);
+  border-top: none;
+  border-radius: 0 0 3px 3px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+.selector-dropdown.open {
+  display: block;
+  animation: dropdownOpen 0.2s ease;
+}
+@keyframes dropdownOpen {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.selector-option {
+  padding: 10px 16px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid rgba(90, 155, 181, 0.04);
+}
+.selector-option:hover {
+  background: rgba(90, 155, 181, 0.06);
+}
+.selector-option:last-child {
+  border-bottom: none;
+}
+.selector-option-name {
+  color: var(--tsuki);
+}
+.selector-option-status {
+  font-size: 0.65rem;
+  color: var(--gin);
+}
+
+/* ===== Day Cards ===== */
+.day-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.day-card {
+  background: linear-gradient(135deg, rgba(90, 155, 181, 0.04), rgba(90, 155, 181, 0.01));
+  border: 1px solid rgba(90, 155, 181, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+.day-card:hover {
+  border-color: rgba(90, 155, 181, 0.18);
+}
+
+.day-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.day-card-header:hover {
+  background: rgba(90, 155, 181, 0.03);
+}
+
+.day-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.day-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1px solid rgba(90, 155, 181, 0.15);
+  color: var(--gin);
+  background: transparent;
+}
+.day-num.complete {
+  border-color: rgba(91, 181, 122, 0.4);
+  color: var(--green);
+  background: var(--green-dim);
+}
+.day-num.in-progress {
+  border-color: rgba(181, 160, 90, 0.4);
+  color: var(--amber);
+  background: var(--amber-dim);
+}
+
+.day-card-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 1px;
+}
+.day-card-sub {
+  font-size: 0.65rem;
+  color: var(--tsuki-dim);
+}
+
+.day-card-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.day-card-chevron {
+  color: var(--gin);
+  font-size: 0.7rem;
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+.day-card.expanded .day-card-chevron {
+  transform: rotate(180deg);
+  opacity: 0.8;
+}
+
+/* ===== Day Detail (Expandable) ===== */
+.day-card-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.day-card.expanded .day-card-body {
+  max-height: 8000px;
+}
+
+.day-card-content {
+  padding: 0 16px 16px;
+  border-top: 1px solid rgba(90, 155, 181, 0.06);
+}
+
+.day-timestamp {
+  font-size: 0.65rem;
+  color: var(--gin);
+  padding: 10px 0 8px;
+  opacity: 0.7;
+}
+
+/* ===== Answer Items ===== */
+.answer-item {
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(90, 155, 181, 0.04);
+}
+.answer-item:last-child {
+  border-bottom: none;
+}
+
+.answer-q-header {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--mizu);
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.answer-text {
+  font-size: 0.82rem;
+  color: var(--tsuki);
+  line-height: 2;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
+.answer-empty {
+  font-size: 0.78rem;
+  color: var(--gin);
+  opacity: 0.4;
+  font-style: italic;
+}
+
+/* ===== Loading ===== */
+.loading-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(10, 10, 20, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.loading-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.loading-ripple {
+  width: 60px; height: 60px;
+  position: relative;
+  margin-bottom: 20px;
+}
+.loading-ripple span {
+  position: absolute;
+  width: 100%; height: 100%;
+  border: 1px solid var(--mizu);
+  border-radius: 50%;
+  animation: ripple 2s ease-out infinite;
+  opacity: 0;
+}
+.loading-ripple span:nth-child(2) {
+  animation-delay: 0.5s;
+}
+.loading-ripple span:nth-child(3) {
+  animation-delay: 1s;
+}
+@keyframes ripple {
+  0% { transform: scale(0.3); opacity: 0; }
+  20% { opacity: 0.6; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+.loading-text {
+  font-size: 0.78rem;
+  color: var(--tsuki-dim);
+  letter-spacing: 0.2em;
+}
+
+/* ===== Empty State ===== */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--gin);
+}
+.empty-state-icon {
+  font-size: 2rem;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+.empty-state-text {
+  font-size: 0.82rem;
+  line-height: 2;
+}
+
+/* ===== Back Button ===== */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--tsuki-dim);
+  cursor: pointer;
+  transition: color 0.3s ease;
+  background: none;
+  border: none;
+  font-family: 'Shippori Mincho', serif;
+  letter-spacing: 0.05em;
+  padding: 0;
+}
+.back-btn:hover {
+  color: var(--mizu-pale);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 640px) {
+  .app {
+    padding: 0 16px;
+  }
+  .stats-grid {
+    gap: 8px;
+  }
+  .stat-value {
+    font-size: 1.3rem;
+  }
+  .stat-label {
+    font-size: 0.6rem;
+  }
+  .day-breakdown {
+    gap: 4px;
+  }
+  .day-breakdown-item {
+    min-width: 38px;
+    padding: 8px 4px;
+  }
+  .day-breakdown-label {
+    font-size: 0.55rem;
+  }
+  .day-breakdown-count {
+    font-size: 0.88rem;
+  }
+  .participant-card {
+    padding: 14px 14px;
+    gap: 10px;
+  }
+  .p-avatar {
+    width: 36px; height: 36px;
+    font-size: 0.78rem;
+  }
+  .p-name {
+    font-size: 0.82rem;
+  }
+  .p-progress-bar {
+    width: 60px;
+  }
+  .header-title {
+    font-size: 0.75rem;
+  }
+  .detail-avatar {
+    width: 44px; height: 44px;
+    font-size: 0.95rem;
+  }
+  .detail-name {
+    font-size: 1rem;
+  }
+  .day-card-title {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .stat-card {
+    padding: 12px 8px;
+  }
+  .day-breakdown {
+    flex-wrap: wrap;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="water-particles" id="waterParticles"></div>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-ripple">
+    <span></span><span></span><span></span>
+  </div>
+  <div class="loading-text">データを読み込んでいます...</div>
+</div>
+
+<div class="app">
+
+  <!-- ===== LOGIN VIEW ===== -->
+  <div class="view active" id="view-login">
+    <div class="login-moon fade-in">
+      <div class="moon"></div>
+      <div class="moon-shadow"></div>
+      <div class="moon-glow"></div>
+    </div>
+    <div class="fade-in d1" style="writing-mode:vertical-rl; font-size:0.7rem; letter-spacing:0.5em; color:var(--mizu); opacity:0.4; margin:0 auto 24px; height:80px; display:flex; align-items:center; justify-content:center;">管 理 画 面</div>
+    <div class="login-title fade-in d2">浄化プログラム<br>—7days</div>
+    <div class="login-sub fade-in d2">ADMIN</div>
+    <input type="password" class="login-input fade-in d3" id="adminKeyInput" placeholder="管理パスワード" autocomplete="off">
+    <div class="login-error" id="loginError"></div>
+    <button class="btn fade-in d4" id="btnLogin">ログイン</button>
+  </div>
+
+  <!-- ===== DASHBOARD VIEW ===== -->
+  <div class="view" id="view-dashboard">
+    <div class="header">
+      <div class="header-title">浄化プログラム 管理画面</div>
+      <div class="header-actions">
+        <button class="btn-icon" id="btnRefresh" title="データ更新">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          更新
+        </button>
+        <button class="btn-icon" id="btnLogout" title="ログアウト">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="stat-value" id="statTotal">-</div>
+        <div class="stat-label">参加者数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statCompleted">-</div>
+        <div class="stat-label">完了者数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statRate">-</div>
+        <div class="stat-label">完了率</div>
+      </div>
+    </div>
+
+    <!-- Day Breakdown -->
+    <div class="day-breakdown" id="dayBreakdown"></div>
+
+    <!-- Participants -->
+    <div class="section-label">参加者一覧</div>
+    <div class="participant-list" id="participantList"></div>
+  </div>
+
+  <!-- ===== PARTICIPANT DETAIL VIEW ===== -->
+  <div class="view" id="view-detail">
+    <div class="header">
+      <button class="back-btn" id="btnBackDashboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        一覧に戻る
+      </button>
+      <div class="header-actions">
+        <button class="btn-icon" id="btnRefreshDetail" title="データ更新">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          更新
+        </button>
+      </div>
+    </div>
+
+    <!-- Participant Selector -->
+    <div class="participant-selector" id="participantSelector">
+      <div class="selector-trigger" id="selectorTrigger">
+        <span id="selectorLabel">参加者を選択</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+      </div>
+      <div class="selector-dropdown" id="selectorDropdown"></div>
+    </div>
+
+    <!-- Detail Header -->
+    <div class="detail-header" id="detailHeader">
+      <div class="detail-avatar" id="detailAvatar"></div>
+      <div>
+        <div class="detail-name" id="detailName"></div>
+        <div class="detail-meta" id="detailMeta"></div>
+      </div>
+    </div>
+
+    <!-- Day Cards -->
+    <div class="day-cards" id="dayCards"></div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// Constants
+// ============================================================
+
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxXaBcXrDVB4VG6iqrdkYeDieffILHivD6vu1IYgluUd2ChUBmpVfpEI0ld54CdstYK/exec';
+const ADMIN_KEY = 'jouka7admin';
+
+const DAY_CONFIG = [
+  { day: 1, title: '過去の浄化', questions: 7 },
+  { day: 2, title: '過去の振り返り・手放し', questions: 7 },
+  { day: 3, title: '怒り・許せないこと', questions: 8 },
+  { day: 4, title: '怒りの振り返り・手放し', questions: 7 },
+  { day: 5, title: '自己否定', questions: 7 },
+  { day: 6, title: '未来・前向き', questions: 7 },
+  { day: 7, title: '7日間の振り返り', questions: 6 },
+];
+
+const CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+
+// ============================================================
+// State
+// ============================================================
+
+let adminData = null;     // { users: [...], day_data: { day1: [...], ... } }
+let currentUser = null;   // selected participant name
+let expandedDays = {};    // { day1: true, day2: false, ... }
+
+// ============================================================
+// DOM Helpers
+// ============================================================
+
+const $ = id => document.getElementById(id);
+const $$ = sel => document.querySelectorAll(sel);
+
+function showView(viewId) {
+  $$('.view').forEach(v => v.classList.remove('active'));
+  $(viewId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showLoading(show) {
+  $('loadingOverlay').classList.toggle('active', show);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ============================================================
+// Water Particles
+// ============================================================
+
+(function() {
+  const container = $('waterParticles');
+  const count = window.innerWidth < 640 ? 10 : 16;
+  for (let i = 0; i < count; i++) {
+    const drop = document.createElement('div');
+    drop.className = 'water-drop';
+    drop.style.height = (30 + Math.random() * 80) + 'px';
+    drop.style.left = Math.random() * 100 + '%';
+    drop.style.animationDuration = (6 + Math.random() * 10) + 's';
+    drop.style.animationDelay = Math.random() * 10 + 's';
+    container.appendChild(drop);
+  }
+})();
+
+// ============================================================
+// API Call
+// ============================================================
+
+async function fetchAdminData(adminKey) {
+  const params = new URLSearchParams({
+    action: 'admin',
+    payload: JSON.stringify({ action: 'admin', admin_key: adminKey })
+  });
+  const url = GAS_URL + '?' + params.toString();
+  const resp = await fetch(url, { redirect: 'follow' });
+  const text = await resp.text();
+  return JSON.parse(text);
+}
+
+// ============================================================
+// Login
+// ============================================================
+
+$('btnLogin').addEventListener('click', handleLogin);
+$('adminKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+
+async function handleLogin() {
+  const key = $('adminKeyInput').value.trim();
+  $('loginError').classList.remove('show');
+
+  if (!key) {
+    showLoginError('パスワードを入力してください');
+    return;
+  }
+
+  // Client-side check first
+  if (key !== ADMIN_KEY) {
+    showLoginError('パスワードが違います');
+    return;
+  }
+
+  $('btnLogin').disabled = true;
+  $('btnLogin').textContent = '...';
+  showLoading(true);
+
+  try {
+    const result = await fetchAdminData(key);
+
+    if (!result.success) {
+      showLoginError(result.error || 'ログインに失敗しました');
+      $('btnLogin').disabled = false;
+      $('btnLogin').textContent = 'ログイン';
+      showLoading(false);
+      return;
+    }
+
+    adminData = result;
+    renderDashboard();
+    showView('view-dashboard');
+    showLoading(false);
+
+  } catch (err) {
+    showLoginError('通信エラーが発生しました');
+    $('btnLogin').disabled = false;
+    $('btnLogin').textContent = 'ログイン';
+    showLoading(false);
+  }
+}
+
+function showLoginError(msg) {
+  $('loginError').textContent = msg;
+  $('loginError').classList.add('show');
+}
+
+// ============================================================
+// Dashboard
+// ============================================================
+
+function renderDashboard() {
+  if (!adminData) return;
+
+  const users = adminData.users || [];
+  const dayData = adminData.day_data || {};
+
+  // Build participant progress map
+  const progressMap = buildProgressMap(users, dayData);
+
+  // Stats
+  const totalUsers = users.length;
+  const completedUsers = Object.values(progressMap).filter(p => p.daysCompleted === 7).length;
+  const rate = totalUsers > 0 ? Math.round((completedUsers / totalUsers) * 100) : 0;
+
+  $('statTotal').textContent = totalUsers;
+  $('statCompleted').textContent = completedUsers;
+  $('statRate').textContent = rate + '%';
+
+  // Day breakdown
+  const breakdownEl = $('dayBreakdown');
+  breakdownEl.innerHTML = '';
+  for (let d = 1; d <= 7; d++) {
+    const dayEntries = dayData['day' + d] || [];
+    const completedCount = dayEntries.filter(e => {
+      const qCount = DAY_CONFIG[d - 1].questions;
+      return e.answers && e.answers.filter(a => a && a.trim() !== '').length >= qCount;
+    }).length;
+
+    const item = document.createElement('div');
+    item.className = 'day-breakdown-item';
+    item.innerHTML = `
+      <div class="day-breakdown-label">Day ${d}</div>
+      <div class="day-breakdown-count">${completedCount}</div>
+    `;
+    breakdownEl.appendChild(item);
+  }
+
+  // Participant list
+  const listEl = $('participantList');
+  listEl.innerHTML = '';
+
+  if (users.length === 0) {
+    listEl.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">&#x2728;</div>
+        <div class="empty-state-text">まだ参加者がいません</div>
+      </div>
+    `;
+    return;
+  }
+
+  // Sort: in-progress first, then completed, then not started
+  const sortedUsers = users.slice().sort((a, b) => {
+    const pa = progressMap[a.name] || { daysCompleted: 0, currentSub: 0 };
+    const pb = progressMap[b.name] || { daysCompleted: 0, currentSub: 0 };
+
+    // Completed goes last
+    if (pa.daysCompleted === 7 && pb.daysCompleted !== 7) return 1;
+    if (pb.daysCompleted === 7 && pa.daysCompleted !== 7) return -1;
+
+    // Not started goes after in-progress
+    if (pa.daysCompleted === 0 && pa.currentSub === 0 && (pb.daysCompleted > 0 || pb.currentSub > 0)) return 1;
+    if (pb.daysCompleted === 0 && pb.currentSub === 0 && (pa.daysCompleted > 0 || pa.currentSub > 0)) return -1;
+
+    // More progress first
+    return pb.daysCompleted - pa.daysCompleted || pb.currentSub - pa.currentSub;
+  });
+
+  sortedUsers.forEach(user => {
+    const prog = progressMap[user.name] || { daysCompleted: 0, currentSub: 0, statusText: '未開始', statusClass: 'notstarted' };
+    const progressPct = Math.round((prog.daysCompleted / 7) * 100);
+    const initial = user.name.charAt(0);
+
+    const card = document.createElement('div');
+    card.className = 'participant-card';
+    card.innerHTML = `
+      <div class="p-avatar">${escapeHtml(initial)}</div>
+      <div class="p-info">
+        <div class="p-name">${escapeHtml(user.name)}</div>
+        <div class="p-status">${escapeHtml(prog.statusText)}</div>
+      </div>
+      <div class="p-progress-wrap">
+        <div class="p-progress-bar"><div class="p-progress-fill" style="width:${progressPct}%"></div></div>
+        <div class="p-progress-text">Day ${prog.daysCompleted}/7</div>
+      </div>
+      <div class="p-arrow">&#x203A;</div>
+    `;
+    card.addEventListener('click', () => openParticipantDetail(user.name));
+    listEl.appendChild(card);
+  });
+}
+
+function buildProgressMap(users, dayData) {
+  const map = {};
+
+  users.forEach(user => {
+    let daysCompleted = 0;
+    let currentSub = 0;  // sub-questions answered in the current (incomplete) day
+    let highestDay = 0;
+
+    for (let d = 1; d <= 7; d++) {
+      const dayEntries = dayData['day' + d] || [];
+      const entry = dayEntries.find(e => e.name === user.name);
+      if (!entry) continue;
+
+      const qCount = DAY_CONFIG[d - 1].questions;
+      const answered = (entry.answers || []).filter(a => a && String(a).trim() !== '').length;
+
+      if (answered >= qCount) {
+        daysCompleted = d;
+      } else if (answered > 0) {
+        highestDay = d;
+        currentSub = answered;
+      }
+    }
+
+    let statusText, statusClass;
+    if (daysCompleted === 7) {
+      statusText = '全日程完了';
+      statusClass = 'complete';
+    } else if (daysCompleted > 0 || currentSub > 0) {
+      const activeDay = highestDay > daysCompleted ? highestDay : daysCompleted + 1;
+      if (currentSub > 0 && highestDay > daysCompleted) {
+        statusText = `Day ${activeDay}/7 進行中 (${currentSub}問回答済み)`;
+      } else {
+        statusText = `Day ${daysCompleted}/7 完了`;
+      }
+      statusClass = 'progress';
+    } else {
+      statusText = '未開始';
+      statusClass = 'notstarted';
+    }
+
+    map[user.name] = { daysCompleted, currentSub, highestDay, statusText, statusClass };
+  });
+
+  return map;
+}
+
+// ============================================================
+// Participant Detail
+// ============================================================
+
+function openParticipantDetail(name) {
+  currentUser = name;
+  expandedDays = {};
+  renderParticipantDetail();
+  showView('view-detail');
+}
+
+function renderParticipantDetail() {
+  if (!adminData || !currentUser) return;
+
+  const dayData = adminData.day_data || {};
+  const users = adminData.users || [];
+  const user = users.find(u => u.name === currentUser);
+
+  // Detail header
+  const initial = currentUser.charAt(0);
+  $('detailAvatar').textContent = initial;
+  $('detailName').textContent = currentUser;
+
+  // Compute progress summary
+  let daysCompleted = 0;
+  let totalAnswered = 0;
+  let totalQuestions = 0;
+  for (let d = 1; d <= 7; d++) {
+    const qCount = DAY_CONFIG[d - 1].questions;
+    totalQuestions += qCount;
+    const entries = dayData['day' + d] || [];
+    const entry = entries.find(e => e.name === currentUser);
+    if (entry) {
+      const answered = (entry.answers || []).filter(a => a && String(a).trim() !== '').length;
+      totalAnswered += answered;
+      if (answered >= qCount) daysCompleted++;
+    }
+  }
+  $('detailMeta').textContent = `${daysCompleted}/7日完了 ・ ${totalAnswered}/${totalQuestions}問回答`;
+
+  // Participant selector
+  renderParticipantSelector();
+
+  // Day cards
+  const cardsEl = $('dayCards');
+  cardsEl.innerHTML = '';
+
+  for (let d = 1; d <= 7; d++) {
+    const config = DAY_CONFIG[d - 1];
+    const entries = dayData['day' + d] || [];
+    const entry = entries.find(e => e.name === currentUser);
+    const answers = entry ? (entry.answers || []) : [];
+    const answeredCount = answers.filter(a => a && String(a).trim() !== '').length;
+    const isComplete = answeredCount >= config.questions;
+    const isInProgress = answeredCount > 0 && !isComplete;
+    const timestamp = entry ? entry.timestamp : null;
+
+    // Status badge
+    let badgeHtml;
+    if (isComplete) {
+      badgeHtml = '<span class="badge badge-complete">回答済み</span>';
+    } else if (isInProgress) {
+      badgeHtml = '<span class="badge badge-progress">途中</span>';
+    } else {
+      badgeHtml = '<span class="badge badge-notstarted">未開始</span>';
+    }
+
+    const dayKey = 'day' + d;
+    const isExpanded = !!expandedDays[dayKey];
+
+    const card = document.createElement('div');
+    card.className = 'day-card' + (isExpanded ? ' expanded' : '');
+    card.dataset.day = d;
+
+    let dayNumClass = '';
+    if (isComplete) dayNumClass = ' complete';
+    else if (isInProgress) dayNumClass = ' in-progress';
+
+    // Build answers HTML
+    let answersHtml = '';
+    if (timestamp) {
+      answersHtml += `<div class="day-timestamp">回答日時: ${escapeHtml(formatTimestamp(timestamp))}</div>`;
+    }
+    for (let q = 0; q < config.questions; q++) {
+      const ans = answers[q];
+      const hasAnswer = ans && String(ans).trim() !== '';
+      answersHtml += `
+        <div class="answer-item">
+          <div class="answer-q-header">質問${CIRCLED[q] || ('(' + (q+1) + ')')}</div>
+          ${hasAnswer
+            ? `<div class="answer-text">${escapeHtml(String(ans))}</div>`
+            : `<div class="answer-empty">未回答</div>`
+          }
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <div class="day-card-header">
+        <div class="day-card-left">
+          <div class="day-num${dayNumClass}">${d}</div>
+          <div>
+            <div class="day-card-title">Day ${d} &#x2014; ${escapeHtml(config.title)}</div>
+            <div class="day-card-sub">${answeredCount}/${config.questions}問 回答済み</div>
+          </div>
+        </div>
+        <div class="day-card-right">
+          ${badgeHtml}
+          <div class="day-card-chevron">&#x25BC;</div>
+        </div>
+      </div>
+      <div class="day-card-body">
+        <div class="day-card-content">
+          ${answersHtml}
+        </div>
+      </div>
+    `;
+
+    // Click to toggle
+    card.querySelector('.day-card-header').addEventListener('click', () => {
+      const key = 'day' + d;
+      expandedDays[key] = !expandedDays[key];
+      card.classList.toggle('expanded', expandedDays[key]);
+    });
+
+    cardsEl.appendChild(card);
+  }
+}
+
+// ============================================================
+// Participant Selector (Quick Jump)
+// ============================================================
+
+let selectorOpen = false;
+
+function renderParticipantSelector() {
+  const users = adminData.users || [];
+  const dayData = adminData.day_data || {};
+  const progressMap = buildProgressMap(users, dayData);
+
+  $('selectorLabel').textContent = `${currentUser} (他の参加者に切替)`;
+
+  const dropdown = $('selectorDropdown');
+  dropdown.innerHTML = '';
+
+  users.forEach(user => {
+    if (user.name === currentUser) return;
+    const prog = progressMap[user.name] || { daysCompleted: 0, statusText: '未開始' };
+
+    const opt = document.createElement('div');
+    opt.className = 'selector-option';
+    opt.innerHTML = `
+      <span class="selector-option-name">${escapeHtml(user.name)}</span>
+      <span class="selector-option-status">Day ${prog.daysCompleted}/7</span>
+    `;
+    opt.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeSelectorDropdown();
+      currentUser = user.name;
+      expandedDays = {};
+      renderParticipantDetail();
+    });
+    dropdown.appendChild(opt);
+  });
+}
+
+$('selectorTrigger').addEventListener('click', () => {
+  selectorOpen = !selectorOpen;
+  $('selectorDropdown').classList.toggle('open', selectorOpen);
+});
+
+function closeSelectorDropdown() {
+  selectorOpen = false;
+  $('selectorDropdown').classList.remove('open');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!$('participantSelector').contains(e.target)) {
+    closeSelectorDropdown();
+  }
+});
+
+// ============================================================
+// Navigation
+// ============================================================
+
+$('btnBackDashboard').addEventListener('click', () => {
+  showView('view-dashboard');
+});
+
+$('btnLogout').addEventListener('click', () => {
+  adminData = null;
+  currentUser = null;
+  $('adminKeyInput').value = '';
+  $('btnLogin').disabled = false;
+  $('btnLogin').textContent = 'ログイン';
+  $('loginError').classList.remove('show');
+  showView('view-login');
+});
+
+// ============================================================
+// Refresh
+// ============================================================
+
+$('btnRefresh').addEventListener('click', refreshData);
+$('btnRefreshDetail').addEventListener('click', refreshData);
+
+async function refreshData() {
+  showLoading(true);
+  try {
+    const result = await fetchAdminData(ADMIN_KEY);
+    if (result.success) {
+      adminData = result;
+      renderDashboard();
+      if (currentUser) {
+        renderParticipantDetail();
+      }
+    }
+  } catch (err) {
+    console.error('Refresh failed:', err);
+  }
+  showLoading(false);
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+
+function formatTimestamp(ts) {
+  if (!ts) return '';
+  const str = String(ts).replace(' (修正)', '');
+
+  try {
+    // If it is a Date-like string, try parsing
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return str;
+
+    const year = d.getFullYear();
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+
+    let result = `${year}年${month}月${day}日 ${hours}:${mins}`;
+    if (String(ts).includes('(修正)')) {
+      result += ' (修正)';
+    }
+    return result;
+  } catch (e) {
+    return str;
+  }
+}
+</script>
+</body>
+</html>

@@ -241,6 +241,8 @@ function handlePostAction(body) {
       return handleRegister(body);
     case 'update':
       return handleUpdate(body);
+    case 'admin':
+      return handleAdmin(body);
     case 'stats':
       return handleGetStats();
     default:
@@ -648,6 +650,98 @@ function handleGetStats() {
     completion_rate: total > 0 ? Math.round((completed / total) * 100) : 0,
     day_breakdown: dayBreakdown,
     today_submissions: todaySubs,
+  });
+}
+
+
+// ============================================================
+// admin - 管理画面用データ取得
+// ============================================================
+
+function handleAdmin(body) {
+  var adminKey = body.admin_key || '';
+
+  if (adminKey !== 'jouka7admin') {
+    return createErrorResponse('管理キーが違います。', 'INVALID_ADMIN_KEY');
+  }
+
+  // --- ユーザー一覧（シート1から取得）---
+  var regSheet = getRegSheet();
+  var lastRow = regSheet.getLastRow();
+  var users = [];
+
+  if (lastRow >= 1) {
+    var startRow = 1;
+    var firstCellVal = String(regSheet.getRange(1, REG.NAME_COL).getValue()).trim();
+    if (firstCellVal === '' || /名前|name|お名前|入力/i.test(firstCellVal)) {
+      startRow = 2;
+    }
+
+    if (lastRow >= startRow) {
+      var dataRows = lastRow - startRow + 1;
+      var names = regSheet.getRange(startRow, REG.NAME_COL, dataRows, 1).getValues();
+      var pins = regSheet.getRange(startRow, REG.PIN_COL, dataRows, 1).getValues();
+
+      for (var i = 0; i < dataRows; i++) {
+        var rowName = String(names[i][0]).trim();
+        if (rowName) {
+          users.push({
+            name: rowName,
+            pin: String(pins[i][0]).trim(),
+            row: startRow + i,
+          });
+        }
+      }
+    }
+  }
+
+  // --- 各Dayのデータ取得 ---
+  var dayDataObj = {};
+
+  for (var d = 1; d <= 7; d++) {
+    var sheet = getDaySheet(d);
+    var sheetLastRow = sheet.getLastRow();
+    var dayEntries = [];
+
+    if (sheetLastRow > 1) {
+      var totalQ = getQuestionCount(d);
+      var totalCols = DCOL.FIRST_Q + totalQ - 1;
+      var data = sheet.getRange(2, 1, sheetLastRow - 1, totalCols).getValues();
+
+      for (var r = 0; r < data.length; r++) {
+        var entryName = String(data[r][DCOL.NAME - 1]).trim();
+        if (!entryName) continue;
+
+        var ts = data[r][DCOL.TIMESTAMP - 1];
+        var tsStr = '';
+        if (ts) {
+          if (ts instanceof Date) {
+            tsStr = Utilities.formatDate(ts, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+          } else {
+            tsStr = String(ts);
+          }
+        }
+
+        var answers = [];
+        for (var q = 0; q < totalQ; q++) {
+          var val = data[r][DCOL.FIRST_Q - 1 + q];
+          answers.push(val ? String(val) : '');
+        }
+
+        dayEntries.push({
+          name: entryName,
+          timestamp: tsStr,
+          answers: answers,
+        });
+      }
+    }
+
+    dayDataObj['day' + d] = dayEntries;
+  }
+
+  return createSuccessResponse({
+    users: users,
+    day_data: dayDataObj,
   });
 }
 
