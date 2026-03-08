@@ -1614,10 +1614,15 @@ async function apiCall(action, data = {}) {
 
   try {
     // GAS Web Appは全てGETで通信（CORS/リダイレクト問題を回避）
-    const params = new URLSearchParams({ action, ...data });
+    let params;
 
-    // POST系のアクションもGETのpayloadパラメータで送る
-    if (!['status', 'list', 'stats'].includes(action)) {
+    if (['status', 'list', 'stats'].includes(action)) {
+      // GET系: パラメータをそのまま渡す
+      params = new URLSearchParams({ action, ...data });
+    } else {
+      // POST系: payloadのみ（個別パラメータは含めない→URL短縮）
+      params = new URLSearchParams();
+      params.set('action', action);
       params.set('payload', JSON.stringify({ action, ...data }));
     }
 
