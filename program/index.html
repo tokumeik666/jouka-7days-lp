@@ -1855,9 +1855,10 @@ async function autoLogin() {
     saveSession();
     hideLoading();
 
-    // ウェルカム動画（初回のみ）
+    // ウェルカム動画（初回のみ: 進捗がない場合だけ再生）
     const hasSeenWelcome = localStorage.getItem('jouka_welcome_seen');
-    if (WELCOME_VIDEO_ID && !hasSeenWelcome) {
+    const hasAnyProgress = state.progress.some(p => p) || state.currentDay > 1;
+    if (WELCOME_VIDEO_ID && !hasSeenWelcome && !hasAnyProgress) {
       playVideo(WELCOME_VIDEO_ID, () => {
         localStorage.setItem('jouka_welcome_seen', '1');
         renderDashboard();
@@ -2017,7 +2018,8 @@ async function handleEnter() {
             }
           }
           const hasSeenWelcome2 = localStorage.getItem('jouka_welcome_seen');
-          if (WELCOME_VIDEO_ID && !hasSeenWelcome2) {
+          const hasAnyProgress2 = state.progress.some(p => p) || state.currentDay > 1;
+          if (WELCOME_VIDEO_ID && !hasSeenWelcome2 && !hasAnyProgress2) {
             playVideo(WELCOME_VIDEO_ID, () => {
               localStorage.setItem('jouka_welcome_seen', '1');
               renderDashboard();
@@ -2057,9 +2059,10 @@ async function handleEnter() {
     }
   }
 
-  // ウェルカム動画（初回ログイン時のみ）
+  // ウェルカム動画（初回のみ: 進捗がない場合だけ再生）
   const hasSeenWelcome = localStorage.getItem('jouka_welcome_seen');
-  if (WELCOME_VIDEO_ID && !hasSeenWelcome) {
+  const hasAnyProgress = state.progress.some(p => p) || state.currentDay > 1;
+  if (WELCOME_VIDEO_ID && !hasSeenWelcome && !hasAnyProgress) {
     playVideo(WELCOME_VIDEO_ID, () => {
       localStorage.setItem('jouka_welcome_seen', '1');
       renderDashboard();
