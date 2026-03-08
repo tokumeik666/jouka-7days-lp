@@ -1492,10 +1492,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // リセット処理
   const params = new URLSearchParams(window.location.search);
-  if (params.get('reset')) {
+  if (params.has('reset')) {
     localStorage.removeItem('jouka_uid');
     localStorage.removeItem('jouka_pin');
     localStorage.removeItem('jouka_name');
+    localStorage.removeItem('jouka_welcome_seen');
     Object.keys(localStorage).filter(k => k.startsWith('jouka_local_')).forEach(k => localStorage.removeItem(k));
     window.location.href = window.location.pathname;
     return;
