@@ -1499,7 +1499,11 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.removeItem('jouka_name');
     localStorage.removeItem('jouka_welcome_seen');
     Object.keys(localStorage).filter(k => k.startsWith('jouka_local_')).forEach(k => localStorage.removeItem(k));
-    window.location.href = window.location.pathname;
+    // テストモードを維持してリダイレクト
+    const redirectUrl = testMode
+      ? window.location.pathname + '?test=1'
+      : window.location.pathname;
+    window.location.href = redirectUrl;
     return;
   }
 
