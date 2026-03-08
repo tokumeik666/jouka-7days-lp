@@ -2531,13 +2531,16 @@ window.onYouTubeIframeAPIReady = function() {
   ytReady = true;
 };
 
-// prePlay: trueまたはオブジェクト{title, sub, btn}の場合、再生ボタン画面を先に表示
+// prePlay: trueまたはオブジェクト{title, sub, btn, skippable}の場合、再生ボタン画面を先に表示
 function playVideo(videoId, onComplete, prePlay) {
   // テストモード: 動画は全て自動スキップ
   if (!videoId || testMode) {
     if (onComplete) onComplete();
     return;
   }
+
+  // スキップ可能か判定（prePlayオブジェクトのskippable、またはprePlay===trueの場合はウェルカム動画なのでスキップ可能）
+  const skippable = prePlay === true || (typeof prePlay === 'object' && prePlay.skippable);
 
   if (prePlay) {
     // プレイ前画面のテキストをカスタマイズ
@@ -2550,22 +2553,52 @@ function playVideo(videoId, onComplete, prePlay) {
       $('preplaySub').textContent = 'あなたの心の器を、空にする7日間。';
       $('btnPreplay').textContent = '浄化プログラムを始める';
     }
-    $('btnSkipPreplay').style.display = 'none';
+    // スキップボタン
+    const skipBtn = $('btnSkipPreplay');
+    if (skippable) {
+      skipBtn.style.display = '';
+      skipBtn.textContent = '動画をスキップして進む';
+      skipBtn.onclick = function() {
+        skipBtn.style.display = 'none';
+        if (onComplete) onComplete();
+      };
+    } else {
+      skipBtn.style.display = 'none';
+    }
     showScreen('screen-preplay', true);
     $('btnPreplay').onclick = function() {
-      startVideoPlayback(videoId, onComplete);
+      skipBtn.style.display = 'none';
+      startVideoPlayback(videoId, onComplete, skippable);
     };
   } else {
-    startVideoPlayback(videoId, onComplete);
+    startVideoPlayback(videoId, onComplete, skippable);
   }
 }
 
-function startVideoPlayback(videoId, onComplete) {
+function startVideoPlayback(videoId, onComplete, skippable) {
   videoCallback = onComplete;
   $('videoLoading').style.display = '';
   $('videoLoading').textContent = '読み込み中...';
   $('videoMsg').classList.remove('show');
-  $('btnSkipVideo').style.display = 'none';
+  // スキップボタン
+  const skipVideoBtn = $('btnSkipVideo');
+  if (skippable) {
+    skipVideoBtn.style.display = '';
+    skipVideoBtn.textContent = '動画をスキップして進む';
+    skipVideoBtn.onclick = function() {
+      skipVideoBtn.style.display = 'none';
+      if (ytPlayer && ytPlayer.destroy) {
+        try { ytPlayer.destroy(); } catch(e) {}
+      }
+      if (videoCallback) {
+        const cb = videoCallback;
+        videoCallback = null;
+        cb();
+      }
+    };
+  } else {
+    skipVideoBtn.style.display = 'none';
+  }
   showScreen('screen-video', true);
 
   setTimeout(() => {
