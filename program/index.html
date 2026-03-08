@@ -2309,12 +2309,15 @@ function showSuccessToast(msg) {
 
 // ===== SUBMIT ANSWER =====
 async function handleSubmit() {
-  const answer = $('answerText').value.trim();
+  let answer = $('answerText').value.trim();
+  if (testMode && !answer) {
+    answer = 'テスト回答';
+  }
   if (!answer) {
     showToast('心の声を聞かせてください');
     return;
   }
-  if (answer.length < 5) {
+  if (!testMode && answer.length < 5) {
     showToast('もう少しだけ、あなたの想いを聞かせてください');
     return;
   }
