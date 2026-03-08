@@ -1035,6 +1035,9 @@ body::after {
 <!-- 水のパーティクル -->
 <div class="water-particles" id="waterParticles"></div>
 
+<!-- Test Mode Indicator -->
+<div id="testBadge" style="display:none; position:fixed; top:12px; right:12px; z-index:9999; background:rgba(196,88,72,0.85); color:#fff; font-size:0.7rem; padding:4px 12px; border-radius:20px; letter-spacing:0.1em; font-family:'Shippori Mincho',serif;">テストモード</div>
+
 <!-- Loading -->
 <div class="loading-wrap" id="loading">
   <div class="loading-dots"><span></span><span></span><span></span></div>
@@ -1276,6 +1279,11 @@ const DONE_MESSAGES = [
   ''
 ];
 
+// ===== TEST MODE =====
+const urlParams = new URLSearchParams(window.location.search);
+const testMode = urlParams.get('test') === '1';
+const ADMIN_KEY = 'jouka7admin';
+
 // ===== STATE =====
 let state = {
   uid: null,
@@ -1301,6 +1309,11 @@ const $ = id => document.getElementById(id);
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
   initWaterParticles();
+
+  // テストモード表示
+  if (testMode) {
+    $('testBadge').style.display = '';
+  }
 
   // リセット処理
   const params = new URLSearchParams(window.location.search);
@@ -1390,6 +1403,11 @@ async function apiCall(action, data = {}) {
     return localMode(action, data);
   }
 
+  // テストモード: admin_keyを付与して時間ロックをスキップ
+  if (testMode) {
+    data.admin_key = ADMIN_KEY;
+  }
+
   try {
     // GAS Web Appは全てGETで通信（CORS/リダイレクト問題を回避）
     const params = new URLSearchParams({ action, ...data });
@@ -1474,8 +1492,8 @@ function localMode(action, data) {
       const subIdx = parseInt(data.sub) || 0;
       const dayKey = 'day' + dayIdx;
 
-      // 24時間ロックチェック
-      if (local.progress.days[dayKey].is_time_locked) {
+      // 24時間ロックチェック（テストモードはスキップ）
+      if (!testMode && local.progress.days[dayKey].is_time_locked) {
         return { success: false, error: '次のワークまでもう少しお待ちください。', code: 'TIME_LOCKED' };
       }
 
@@ -1516,8 +1534,14 @@ function localMode(action, data) {
               total_sub_questions: QUESTIONS[dayIdx].length
             };
           }
-          local.progress.days[nextKey].is_time_locked = true;
-          local.progress.days[nextKey].unlock_at = unlockAt.toISOString().replace('T', ' ').substring(0, 19);
+          if (testMode) {
+            // テストモード: 時間ロックをスキップ、すぐ解放
+            local.progress.days[nextKey].is_unlocked = true;
+            local.progress.days[nextKey].is_time_locked = false;
+          } else {
+            local.progress.days[nextKey].is_time_locked = true;
+            local.progress.days[nextKey].unlock_at = unlockAt.toISOString().replace('T', ' ').substring(0, 19);
+          }
           local.progress.current_day = dayIdx + 1;
         } else {
           local.progress.current_day = 7;

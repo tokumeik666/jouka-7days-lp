@@ -299,7 +299,8 @@ function handleAuth(body) {
       var rowPin = String(pins[i][0]).trim();
       if (rowPin === pin) {
         // 認証成功 → dayシートから進捗を構築
-        var progress = buildProgressObject(name);
+        var skipTimeLock = (body.admin_key === 'jouka7admin');
+        var progress = buildProgressObject(name, skipTimeLock);
 
         return createSuccessResponse({
           registered: true,
@@ -433,13 +434,17 @@ function handleSubmit(body) {
     }
 
     // 21:00リセットチェック（前日が完了している場合のみ）
-    var prevTimestamp = prevSheet.getRange(prevRow, DCOL.TIMESTAMP).getValue();
-    if (prevTimestamp) {
-      var now = new Date();
-      var unlockAt = getNextUnlockTime(prevTimestamp);
-      if (now.getTime() < unlockAt.getTime()) {
-        var unlockAtStr = Utilities.formatDate(unlockAt, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
-        return createErrorResponse('Day ' + day + ' は ' + unlockAtStr + ' に解放されます。', 'TIME_LOCKED');
+    // テストモード（admin_key付き）は時間ロックをスキップ
+    var isTestMode = (body.admin_key === 'jouka7admin');
+    if (!isTestMode) {
+      var prevTimestamp = prevSheet.getRange(prevRow, DCOL.TIMESTAMP).getValue();
+      if (prevTimestamp) {
+        var now = new Date();
+        var unlockAt = getNextUnlockTime(prevTimestamp);
+        if (now.getTime() < unlockAt.getTime()) {
+          var unlockAtStr = Utilities.formatDate(unlockAt, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+          return createErrorResponse('Day ' + day + ' は ' + unlockAtStr + ' に解放されます。', 'TIME_LOCKED');
+        }
       }
     }
   }
@@ -750,7 +755,7 @@ function handleAdmin(body) {
 // プログレス構築
 // ============================================================
 
-function buildProgressObject(name) {
+function buildProgressObject(name, skipTimeLock) {
   var days = {};
   var daysCompleted = 0;
   var currentDay = 1;
@@ -807,13 +812,18 @@ function buildProgressObject(name) {
       }
 
       if (prevDayComplete && prevTimestamp) {
-        var tsStr = String(prevTimestamp).replace(' (修正)', '');
-        var unlockTime = getNextUnlockTime(tsStr);
-        if (now.getTime() >= unlockTime.getTime()) {
+        if (skipTimeLock) {
+          // テストモード: 時間ロックをスキップ、前日完了ならすぐ解放
           isUnlocked = true;
         } else {
-          isTimeLocked = true;
-          unlockAt = Utilities.formatDate(unlockTime, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+          var tsStr = String(prevTimestamp).replace(' (修正)', '');
+          var unlockTime = getNextUnlockTime(tsStr);
+          if (now.getTime() >= unlockTime.getTime()) {
+            isUnlocked = true;
+          } else {
+            isTimeLocked = true;
+            unlockAt = Utilities.formatDate(unlockTime, CONFIG.TIMEZONE, 'yyyy-MM-dd HH:mm:ss');
+          }
         }
       }
     }
