@@ -2509,14 +2509,13 @@ window.onYouTubeIframeAPIReady = function() {
 
 // prePlay: trueまたはオブジェクト{title, sub, btn, skippable}の場合、再生ボタン画面を先に表示
 function playVideo(videoId, onComplete, prePlay) {
-  // テストモード: 動画は全て自動スキップ
-  if (!videoId || testMode) {
+  if (!videoId) {
     if (onComplete) onComplete();
     return;
   }
 
-  // スキップ可能か判定（prePlayオブジェクトのskippable、またはprePlay===trueの場合はウェルカム動画なのでスキップ可能）
-  const skippable = prePlay === true || (typeof prePlay === 'object' && prePlay.skippable);
+  // スキップ可能か判定（テストモードは全て、通常はウェルカム動画のみ）
+  const skippable = testMode || prePlay === true || (typeof prePlay === 'object' && prePlay.skippable);
 
   if (prePlay) {
     // プレイ前画面のテキストをカスタマイズ
