@@ -1525,6 +1525,27 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  // テストモード: ログイン不要、即ダッシュボードへ
+  if (testMode) {
+    state.name = 'テストユーザー';
+    state.pin = '0000';
+    state.uid = 'test';
+    // ローカルにデータがなければ自動作成
+    const testKey = 'jouka_local_test';
+    let testLocal = JSON.parse(localStorage.getItem(testKey) || 'null');
+    if (!testLocal) {
+      localMode('register', { name: state.name, pin: state.pin, uid: 'test' });
+    }
+    const authResult = localMode('auth', { name: state.name, pin: state.pin });
+    if (authResult.success) {
+      parseProgress(authResult.progress);
+    }
+    hideLoading();
+    renderDashboard();
+    showScreen('screen-dashboard', true);
+    return;
+  }
+
   // ローカルストレージから復元
   state.pin = localStorage.getItem('jouka_pin') || null;
   state.name = localStorage.getItem('jouka_name') || '';
@@ -1536,11 +1557,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ログイン画面を表示
     hideLoading();
     if (state.name) $('nameInput').value = state.name;
-    // テストモード: ユニークなテスト名とPINをプレフィル
-    if (testMode && !state.name) {
-      $('nameInput').value = 'テスト_' + Date.now().toString(36);
-      $('pinSetInput').value = '0000';
-    }
     showScreen('screen-welcome');
   }
 
