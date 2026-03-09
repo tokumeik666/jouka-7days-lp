@@ -1543,24 +1543,23 @@ document.addEventListener('DOMContentLoaded', () => {
     hideLoading();
     renderDashboard();
     showScreen('screen-dashboard', true);
-    return;
-  }
-
-  // ローカルストレージから復元
-  state.pin = localStorage.getItem('jouka_pin') || null;
-  state.name = localStorage.getItem('jouka_name') || '';
-
-  // 保存済み情報があれば自動ログイン試行
-  if (state.name && state.pin) {
-    autoLogin();
   } else {
-    // ログイン画面を表示
-    hideLoading();
-    if (state.name) $('nameInput').value = state.name;
-    showScreen('screen-welcome');
+    // ローカルストレージから復元
+    state.pin = localStorage.getItem('jouka_pin') || null;
+    state.name = localStorage.getItem('jouka_name') || '';
+
+    // 保存済み情報があれば自動ログイン試行
+    if (state.name && state.pin) {
+      autoLogin();
+    } else {
+      // ログイン画面を表示
+      hideLoading();
+      if (state.name) $('nameInput').value = state.name;
+      showScreen('screen-welcome');
+    }
   }
 
-  // Event Listeners
+  // Event Listeners（テストモードでも必要）
   $('btnEnter').addEventListener('click', handleEnter);
   $('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') $('pinSetInput').focus(); });
   $('pinSetInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleEnter(); });
