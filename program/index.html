@@ -1603,13 +1603,9 @@ function showToast(msg) {
 
 // ===== API CALLS =====
 async function apiCall(action, data = {}) {
-  if (!GAS_URL) {
+  // テストモード: サーバー通信なし、ローカルのみで動作
+  if (!GAS_URL || testMode) {
     return localMode(action, data);
-  }
-
-  // テストモード: admin_keyを付与して時間ロックをスキップ
-  if (testMode) {
-    data.admin_key = ADMIN_KEY;
   }
 
   try {
@@ -1672,7 +1668,7 @@ function localMode(action, data) {
 
   switch (action) {
     case 'auth': {
-      // ローカルモード: 名前+PINで検索（自動登録なし）
+      // ローカルモード: 名前+PINで検索
       const allKeys = Object.keys(localStorage).filter(k => k.startsWith('jouka_local_'));
       let nameFound = false;
       for (const k of allKeys) {
@@ -1684,6 +1680,11 @@ function localMode(action, data) {
           localStorage.setItem(k, JSON.stringify(u));
           return { success: true, pin_verified: true, registered: true, is_new: false, uid: u.uid, name: u.name, progress: u.progress, current_day: u.progress.current_day };
         }
+      }
+      // テストモード: 未登録なら自動登録してログイン
+      if (testMode) {
+        const regResult = localMode('register', { name: data.name, pin: data.pin, uid: data.name });
+        return { success: true, pin_verified: true, registered: true, is_new: true, uid: data.name, name: data.name, progress: regResult.progress, current_day: 1 };
       }
       return { success: false, error: 'この名前は登録されていません。先に登録フォームからご登録ください。', code: 'NOT_REGISTERED' };
     }
@@ -1993,47 +1994,7 @@ async function handleEnter() {
   $('btnEnter').textContent = '扉を開く';
 
   if (!result.success) {
-    // テストモード: 未登録なら自動登録してリトライ
-    if (testMode && result.code === 'NOT_REGISTERED') {
-      const regResult = await apiCall('register', { name: name, pin: pin });
-      if (regResult.success) {
-        // 登録成功 → もう一度auth
-        const retryResult = await apiCall('auth', { name: name, pin: pin, uid: uidFromUrl });
-        if (retryResult.success && retryResult.pin_verified) {
-          // 認証成功 → 以降の処理へ
-          $('btnEnter').disabled = false;
-          $('btnEnter').textContent = '扉を開く';
-          state.uid = retryResult.uid;
-          state.pin = pin;
-          state.name = retryResult.name || name;
-          saveSession();
-          if (retryResult.progress) {
-            parseProgress(retryResult.progress);
-          } else {
-            state.progress = [false,false,false,false,false,false,false];
-            state.currentDay = retryResult.current_day || 1;
-            state.subAnswers = [];
-            for (let d = 0; d < 7; d++) {
-              state.subAnswers[d] = new Array(QUESTIONS[d].length).fill(null);
-            }
-          }
-          const hasSeenWelcome2 = localStorage.getItem('jouka_welcome_seen');
-          const hasAnyProgress2 = state.progress.some(p => p) || state.currentDay > 1;
-          if (WELCOME_VIDEO_ID && !hasSeenWelcome2 && !hasAnyProgress2) {
-            playVideo(WELCOME_VIDEO_ID, () => {
-              localStorage.setItem('jouka_welcome_seen', '1');
-              renderDashboard();
-              showScreen('screen-dashboard', true);
-            }, true);
-          } else {
-            renderDashboard();
-            showScreen('screen-dashboard', true);
-          }
-          return;
-        }
-      }
-    }
-    // PINが違う場合 or 登録失敗
+    // PINが違う場合
     $('authErrorMsg').textContent = result.error || 'ログインに失敗しました';
     $('authErrorMsg').classList.add('show');
     $('pinSetInput').value = '';
