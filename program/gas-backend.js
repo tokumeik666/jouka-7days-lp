@@ -296,7 +296,7 @@ function handleAuth(body) {
     var rowName = String(names[i][0]).trim();
     if (rowName === name) {
       nameFound = true;
-      var rowPin = String(pins[i][0]).trim();
+      var rowPin = String(pins[i][0]).trim().padStart(4, '0');
       if (rowPin === pin) {
         // 認証成功 → dayシートから進捗を構築
         var skipTimeLock = (body.admin_key === 'jouka7admin');
@@ -361,7 +361,8 @@ function handleRegister(body) {
   // シート1に追記（名前とPINの列に書き込み）
   var newRow = lastRow + 1;
   regSheet.getRange(newRow, REG.NAME_COL).setValue(name);
-  regSheet.getRange(newRow, REG.PIN_COL).setValue(pin);
+  // PINをテキストとして保存（先頭ゼロが消えないように）
+  regSheet.getRange(newRow, REG.PIN_COL).setNumberFormat('@').setValue(pin);
 
   Logger.log('新規登録: ' + name);
 
@@ -1017,7 +1018,7 @@ function verifyPin(regSheet, name, pin) {
   var pins = regSheet.getRange(startRow, REG.PIN_COL, dataRows, 1).getValues();
 
   for (var i = 0; i < dataRows; i++) {
-    if (String(names[i][0]).trim() === name && String(pins[i][0]).trim() === pin) {
+    if (String(names[i][0]).trim() === name && String(pins[i][0]).trim().padStart(4, '0') === pin) {
       return true;
     }
   }
