@@ -1834,6 +1834,18 @@ function getLocalNextUnlockTime(completedDate) {
 
 // ===== ローカルモードのロック再計算（21:00リセット） =====
 function recalcLocalTimeLocks(local) {
+  // テストモード: 全ロック解除
+  if (testMode) {
+    for (let d = 1; d <= 7; d++) {
+      const dd = local.progress.days['day' + d];
+      if (dd) {
+        dd.is_time_locked = false;
+        dd.unlock_at = null;
+        if (!dd.is_completed) dd.is_unlocked = true;
+      }
+    }
+    return;
+  }
   const now = Date.now();
   let currentDay = 1;
 
@@ -1945,8 +1957,8 @@ function parseProgress(progressData) {
       const dayData = progressData.days['day' + d];
       if (dayData) {
         state.progress[d - 1] = !!dayData.is_completed;
-        state.timeLocked[d - 1] = !!dayData.is_time_locked;
-        state.unlockTimes[d - 1] = dayData.unlock_at || null;
+        state.timeLocked[d - 1] = testMode ? false : !!dayData.is_time_locked;
+        state.unlockTimes[d - 1] = testMode ? null : (dayData.unlock_at || null);
 
         // Handle sub-question answers (new format: answers array)
         if (Array.isArray(dayData.answers)) {
