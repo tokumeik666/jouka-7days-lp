@@ -1697,8 +1697,16 @@ document.addEventListener('DOMContentLoaded', () => {
       parseProgress(authResult.progress);
     }
     hideLoading();
-    renderDashboard();
-    showScreen('screen-dashboard', true);
+
+    // ?test=1&final → 完了画面を直接表示
+    if (params.has('final')) {
+      state.progress = [true,true,true,true,true,true,true];
+      state.currentDay = 7;
+      showScreen('screen-final', true);
+    } else {
+      renderDashboard();
+      showScreen('screen-dashboard', true);
+    }
   } else {
     // ローカルストレージから復元
     state.pin = localStorage.getItem('jouka_pin') || null;
