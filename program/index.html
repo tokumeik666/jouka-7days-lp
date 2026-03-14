@@ -961,6 +961,25 @@ body::after {
   border-bottom: 1px solid rgba(90, 155, 181, 0.15);
   margin-bottom: 16px;
 }
+.btn-line-send {
+  display: inline-block;
+  padding: 14px 32px;
+  background: #06C755;
+  color: #fff;
+  font-family: 'Shippori Mincho', serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  margin: 8px 0 16px;
+  transition: all 0.3s ease;
+}
+.btn-line-send:hover {
+  background: #05b34d;
+  box-shadow: 0 0 20px rgba(6, 199, 85, 0.2);
+}
 .final-cta-note {
   font-size: 0.7rem;
   color: var(--gin);
@@ -1550,10 +1569,11 @@ body::after {
     <div class="final-cta fade-in d5">
       <p class="final-cta-text">
         参拝映像やメッセージを受け取るには、<br>
-        公式LINEに下記のメッセージを送ってください。
+        下のボタンから公式LINEに<br>
+        「プログラム完了」と送信してください。
       </p>
-      <div class="final-cta-keyword">プログラム完了</div>
-      <p class="final-cta-note">※ このメッセージを送ると、<br>参拝映像・特別コンテンツが届きます</p>
+      <a href="https://line.me/R/oaMessage/%40256vkymy/?%E3%83%97%E3%83%AD%E3%82%B0%E3%83%A9%E3%83%A0%E5%AE%8C%E4%BA%86" class="btn-line-send">LINEで「プログラム完了」を送る</a>
+      <p class="final-cta-note">※ LINEが開きます。送信ボタンを押してください</p>
     </div>
 
     <div class="final-special fade-in d5">
