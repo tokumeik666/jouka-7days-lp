@@ -775,7 +775,7 @@ body::after {
 }
 .final-moon {
   width: 160px; height: 160px;
-  margin: 0 auto 40px;
+  margin: 0 auto 48px;
   position: relative;
   animation: moonFloat 6s ease-in-out infinite;
 }
@@ -794,149 +794,31 @@ body::after {
   0%, 100% { box-shadow: 0 0 60px rgba(126, 196, 216, 0.2), 0 0 120px rgba(126, 196, 216, 0.08); }
   50% { box-shadow: 0 0 80px rgba(126, 196, 216, 0.3), 0 0 160px rgba(126, 196, 216, 0.12); }
 }
-.final-vertical {
-  writing-mode: vertical-rl;
-  font-size: 0.7rem;
-  letter-spacing: 0.6em;
-  color: var(--mizu);
-  opacity: 0.35;
-  margin: 0 auto 28px;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .final-title {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 700;
   line-height: 2;
-  margin-bottom: 12px;
-}
-.final-sub {
-  font-size: 0.78rem;
-  color: var(--gin);
-  margin-bottom: 40px;
-  letter-spacing: 0.2em;
+  margin-bottom: 16px;
 }
 .final-message {
   font-size: 0.88rem;
   color: var(--tsuki-dim);
   line-height: 2.4;
-  margin-bottom: 40px;
+  margin-bottom: 48px;
   max-width: 420px;
-}
-.final-divider {
-  width: 40px;
-  height: 1px;
-  background: rgba(90, 155, 181, 0.3);
-  margin: 0 auto 40px;
-}
-.final-changes {
-  max-width: 380px;
-  margin: 0 auto 40px;
-  text-align: left;
-}
-.final-changes-title {
-  font-size: 0.78rem;
-  color: var(--mizu);
-  letter-spacing: 0.2em;
-  margin-bottom: 20px;
-  text-align: center;
-}
-.final-change-item {
-  font-size: 0.82rem;
-  color: var(--tsuki-dim);
-  line-height: 2;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(90, 155, 181, 0.06);
-  padding-left: 20px;
-  position: relative;
-}
-.final-change-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--mizu);
-  opacity: 0.4;
 }
 .final-quote {
   font-size: 1rem;
   color: var(--mizu-pale);
   font-weight: 500;
-  line-height: 2.4;
+  line-height: 2.2;
   padding: 32px 24px;
   border-left: 2px solid rgba(90, 155, 181, 0.25);
   background: linear-gradient(135deg, rgba(90, 155, 181, 0.04), transparent);
   max-width: 400px;
   text-align: left;
-  margin: 0 auto 40px;
+  margin: 0 auto;
 }
-.final-closing {
-  font-size: 0.85rem;
-  color: var(--tsuki-dim);
-  line-height: 2.4;
-  margin-bottom: 36px;
-  max-width: 380px;
-}
-.final-signature {
-  font-size: 0.75rem;
-  color: var(--gin);
-  letter-spacing: 0.15em;
-  margin-bottom: 40px;
-  opacity: 0.6;
-}
-.final-btn-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 40px;
-}
-.btn-final {
-  display: inline-block;
-  padding: 14px 44px;
-  background: transparent;
-  color: var(--tsuki);
-  font-family: 'Shippori Mincho', serif;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border: 1px solid rgba(90, 155, 181, 0.4);
-  letter-spacing: 0.2em;
-  cursor: pointer;
-  transition: all 0.5s ease;
-  position: relative;
-  overflow: hidden;
-}
-.btn-final::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(90, 155, 181, 0.08), transparent);
-  transition: left 0.7s ease;
-}
-.btn-final:hover::before { left: 100%; }
-.btn-final:hover {
-  border-color: var(--mizu-pale);
-  box-shadow: 0 0 30px rgba(90, 155, 181, 0.1);
-}
-.btn-final-sub {
-  font-size: 0.72rem;
-  color: var(--gin);
-  background: none;
-  border: none;
-  cursor: pointer;
-  letter-spacing: 0.1em;
-  opacity: 0.5;
-  transition: opacity 0.3s ease;
-  font-family: 'Shippori Mincho', serif;
-}
-.btn-final-sub:hover { opacity: 0.8; }
 
 /* ===== Error Screen ===== */
 #screen-error {
@@ -1289,14 +1171,11 @@ body::after {
   .answer-textarea { min-height: 180px; padding: 16px; font-size: 0.88rem; }
   .q-day-num { font-size: 2rem; }
   .btn-primary, .btn-submit, .btn-start-day { padding: 14px 36px; font-size: 0.85rem; }
-  .final-moon { width: 130px; height: 130px; margin-bottom: 32px; }
+  .final-moon { width: 130px; height: 130px; }
   .final-moon .moon-full { width: 105px; height: 105px; top: 12px; left: 12px; }
   .final-title { font-size: 1.2rem; }
   .final-message { font-size: 0.82rem; }
   .final-quote { padding: 24px 18px; font-size: 0.92rem; }
-  .final-change-item { font-size: 0.78rem; }
-  .final-closing { font-size: 0.8rem; }
-  .btn-final { padding: 12px 36px; font-size: 0.8rem; }
   .pin-input { font-size: 1.5rem; letter-spacing: 0.6em; }
   .pin-set-input { font-size: 1.2rem; }
   .pin-dots { gap: 12px; }
@@ -1455,52 +1334,17 @@ body::after {
     <div class="final-moon fade-in">
       <div class="moon-full"></div>
     </div>
-    <div class="final-vertical fade-in d1">浄 化 完 了</div>
-    <h2 class="final-title fade-in d1">7日間の浄化が<br>完了しました。</h2>
-    <p class="final-sub fade-in d2">— 満月の器 —</p>
-
+    <h2 class="final-title fade-in d1">浄化、完了。</h2>
     <p class="final-message fade-in d2">
-      7日間、あなたは自分自身と向き合い続けました。<br><br>
-      過去を書き出し、手放し、<br>
-      怒りを吐き出し、手放し、<br>
-      自己否定と向き合い、<br>
-      そして本当に望む未来を描いた。<br><br>
-      この7日間でやったことは、<br>
-      普通の人が一生かけてもやらないこと。<br><br>
-      あなたの心の器は今、<br>
-      空っぽに、澄んでいます。
+      7日間、あなたは自分自身と向き合い続けました。<br>
+      心の器に溜まっていた重荷を手放し、<br>
+      今、あなたの器は空っぽになりました。<br><br>
+      これからの人生に、<br>
+      何を入れていくかは、あなた次第です。
     </p>
-
-    <div class="final-divider fade-in d3"></div>
-
-    <div class="final-changes fade-in d3">
-      <div class="final-changes-title">これから起きること</div>
-      <div class="final-change-item">不思議と人間関係がスムーズになる</div>
-      <div class="final-change-item">ずっと動けなかったことに、自然と手が伸びる</div>
-      <div class="final-change-item">「なんとなく」の不調やモヤモヤが消える</div>
-      <div class="final-change-item">周りの人から「なんか変わったね」と言われる</div>
-      <div class="final-change-item">小さな幸運やいいタイミングが重なり始める</div>
-    </div>
-
-    <div class="final-quote fade-in d4">
+    <div class="final-quote fade-in d3">
       空になった器にこそ、<br>
-      新しい光が注がれる。<br><br>
-      あなたの運気は、<br>
-      もう動き始めている。
-    </div>
-
-    <p class="final-closing fade-in d5">
-      これからの日々で変化を感じたら、<br>
-      LINEでいつでも教えてください。<br><br>
-      あなたが浄化の旅を完走したこと、<br>
-      心から誇りに思います。
-    </p>
-
-    <p class="final-signature fade-in d5">— tokumei —</p>
-
-    <div class="final-btn-wrap fade-in d5">
-      <button class="btn-final" id="btnFinalDashboard">浄化の記録を振り返る</button>
-      <button class="btn-final-sub" id="btnFinalRestart">もう一度、最初から浄化する</button>
+      新しい光が注がれる。
     </div>
   </div>
 </div>
@@ -1726,19 +1570,6 @@ document.addEventListener('DOMContentLoaded', () => {
     reloadDashboard();
   });
   $('btnEditAnswer').addEventListener('click', toggleEditList);
-
-  // 完了画面ボタン
-  $('btnFinalDashboard').addEventListener('click', () => {
-    reloadDashboard();
-  });
-  $('btnFinalRestart').addEventListener('click', () => {
-    if (confirm('浄化の記録をリセットして、最初からやり直しますか？')) {
-      const key = testMode ? 'jouka_local_test' : 'jouka_local_' + state.name;
-      localStorage.removeItem(key);
-      localStorage.removeItem('jouka_welcome_seen');
-      window.location.href = window.location.pathname + (testMode ? '?test=1' : '');
-    }
-  });
 });
 
 // ===== WATER PARTICLES =====
